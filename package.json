@@ -1,0 +1,19 @@
+{
+  "name": "beebotte",
+  "description": "Beebotte is an open cloud platform for real time connected objects. This package provides the implementation of Beebotte API in nodejs.",
+  "version": "0.1.0",
+  "author": "Beebotte <bwehbi@beebotte.com>",
+  "homepage": "https://github.com/beebotte/bbt_node",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beebotte/bbt_node.git"
+  },
+  "engines": {
+    "node": ">=0.8"
+  },
+  "main": "lib/bbt-node.js",
+  "dependencies": {
+    "request": ">=2.27",
+    "joi": ">=1.1.x"
+  }
+}
