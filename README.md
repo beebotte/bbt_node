@@ -19,7 +19,7 @@ issue in github. Please provide as much information as possible about the issue 
 
 To install the most recent release from npm, run:
 
-    npm install mongodb
+    npm install beebotte
 
 ## Introduction
 
@@ -55,7 +55,7 @@ Smart home device includes multiple sensors (services) offering a number of reso
     if(err) throw(err);
     console.log(res);
    });
-```javascript
+```
 
 ## License
 Copyright 2013 - 2014 Beebotte.
