@@ -1,13 +1,23 @@
+/*
+ * Example showing how to use Beebotte to monitor the CPU and memory usage of a server. 
+ * Works on any Linux platform.
+ * Microsoft Windows is not (yet) supported.
+ *
+ * Copyright, Beebotte.com
+ * MIT license
+ */
+
 var fs = require('fs');
 var os = require('os');
 var bbt = require('../../lib/bbt-node');
 
 var bclient = new bbt.Connector(
   {
-    keyId: process.env.key,
-    secretKey: process.env.skey,
-    hostname: 'x.beebotte.com',
-    port: 8080
+    //API keys for your account
+    keyId: process.env.ACCESS_KEY,
+    secretKey: process.env.SECURITY_KEY,
+    hostname: 'api.beebotte.com', //This is the default host anyway
+    port: 80 //This is the default port number anyway
 });
 
 var cpus = null;
@@ -74,7 +84,7 @@ setInterval(function()
     else {
       var new_cpus = os.cpus();
       var avg_cpu = getAvgCpu(cpus, new_cpus);
-      //Send an array of records (Bulk Write), improved performance
+      //Write a record to the CPU resource
       bclient.writeResource({
         device: 'sandbox',
         service: 'performance',
@@ -87,6 +97,7 @@ setInterval(function()
       meminfo(function (err, data) {
         console.log(data);
         if(err) return console.log(err);
+        //Write a record to the memory resource
         bclient.writeResource({
           device: 'sandbox',
           service: 'performance',
@@ -99,6 +110,6 @@ setInterval(function()
       console.log(avg_cpu);
       cpus = new_cpus;
     }
-  }, 60 * 1000
+  }, process.env.FREQUECY || (60 * 1000 /* 1 minute */)
 );
 
