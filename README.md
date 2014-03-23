@@ -30,13 +30,14 @@ Remember, Beebotte resource description uses a three levels hierarchy:
   - Service: belongs to a device and offers specific service like sensing data
   - Resource: most elementary part of Beebotte, this is the actual data source (temperature from a domotics sensor)
 
-Smart home device includes multiple sensors (services) offering a number of resources (humidity, temperature, high temperature alert, etc.)
+an example can be a smart home device including multiple sensors (humidity, temperature: i.e. services) offering a number of resources (humidity rate , temperature, high temperature alert, etc.)
 
 ```javascript
   //Include the Beebotte SDK for nodejs
   var bbt = require('beebotte');
 
   //Create a Beebotte connector
+  //Replace access key and security key by those of your account
   var bclient = new bbt.Connector({keyId: 'ACCESS KEY', secretKey: 'SECURITY KEY'});
 
   bclient.writeResource(
@@ -54,7 +55,7 @@ Smart home device includes multiple sensors (services) offering a number of reso
   }, function(err, res) {
     if(err) throw(err);
     console.log(res);
-   });
+  });
 ```
 
 ## License
