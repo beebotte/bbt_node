@@ -22,8 +22,8 @@
     "connected"
   ],
   "dependencies": {
-    "request": ">=2.27",
-    "joi": ">=1.1.x"
+    "request": "2.34.0",
+    "joi": "2.9.0"
   },
   "license": "MIT"
 }
