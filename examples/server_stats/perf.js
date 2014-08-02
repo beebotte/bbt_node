@@ -85,9 +85,8 @@ setInterval(function()
       var new_cpus = os.cpus();
       var avg_cpu = getAvgCpu(cpus, new_cpus);
       //Write a record to the CPU resource
-      bclient.writeResource({
+      bclient.write({
         device: 'my_device',
-        service: 'os',
         resource: 'cpu',
         value: avg_cpu 
       }, function(err, res) {
@@ -98,9 +97,8 @@ setInterval(function()
         console.log(data);
         if(err) return console.log(err);
         //Write a record to the memory resource
-        bclient.writeResource({
+        bclient.write({
           device: 'my_device',
-          service: 'os',
           resource: 'memory',
           value: data
         }, function(err, res) {
@@ -110,6 +108,6 @@ setInterval(function()
       console.log(avg_cpu);
       cpus = new_cpus;
     }
-  }, process.env.FREQUECY || (1000 /* 1 minute */)
+  }, process.env.FREQUECY || (1000 * 60 /* 1 minute */)
 );
 

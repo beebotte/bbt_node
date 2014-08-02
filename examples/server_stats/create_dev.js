@@ -1,6 +1,6 @@
 /*
- * Example creating a device to report system metrics like CPU and memory usage.
- * After creating yur device, you can run 'perf.js' script to start reporting to Beebotte.
+ * Example creating a channel to report system metrics like CPU and memory usage.
+ * After creating your channel, you can run 'perf.js' script to start reporting to Beebotte.
  *
  * Copyright, Beebotte.com
  * MIT license
@@ -17,23 +17,19 @@ var bclient = new bbt.Connector(
     port: 80 //This is the default port number anyway
 });
 
-var device = {
+var channel = {
   name: 'my_device', 
-  description: 'Device representing the OS stats of my raspberry device', 
+  description: 'Device representing the OS stats of my embedded system', 
   ispublic: false, 
-  services: [{
-    name: 'os', 
-    description: 'OS system performance metrics', 
-    resources: [
-      {name: 'cpu', description: 'CPU usage', vtype: 'cpu'},
-      {name: 'memory', description: 'Memory usage', vtype: 'memory'},
-    ]
-  }]
+  resources: [
+    {name: 'cpu', description: 'CPU usage', vtype: 'cpu'},
+    {name: 'memory', description: 'Memory usage', vtype: 'memory'},
+  ]
 };
 
-bclient.addDevice(device, function(err, res) {
+bclient.addChannel(device, function(err, res) {
     if(err) return console.log(err);
-    //The device was created successfully!
+    //The channel was created successfully!
     console.log(res);//expecting true as success result
 });
 
