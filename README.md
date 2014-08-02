@@ -5,7 +5,7 @@ Beebotte Node.JS SDK
 |---------------|----------------------------------------|
 | overview      | http://beebotte.com/overview           |
 | tutorials     | http://beebotte.com/tutorials          |
-| apidoc        | http://beebotte.com/api                |
+| apidoc        | http://beebotte.com/docs/restapi       |
 | source        | https://github.com/beebotte/bbt_node   |
 
 ### Bugs / Feature Requests
@@ -25,9 +25,8 @@ To install the most recent release from npm, run:
 
 A simple example of writing/reading data to/from a resource.
 
-Remember, Beebotte resource description uses a three levels hierarchy:
-  - Device: physical or virtual connected object (an application, an arduino, a coffee machine, etc) providing some services
-  - Service: belongs to a device and offers specific service like sensing data
+Remember, Beebotte resource description uses a two levels hierarchy:
+  - Channel: physical or virtual connected object (an application, an arduino, a coffee machine, etc) providing some resources
   - Resource: most elementary part of Beebotte, this is the actual data source (temperature from a domotics sensor)
 
 an example can be a smart home device including multiple sensors (humidity, temperature: i.e. services) offering a number of resources (humidity rate , temperature, high temperature alert, etc.)
@@ -40,18 +39,17 @@ an example can be a smart home device including multiple sensors (humidity, temp
   //Replace access key and security key by those of your account
   var bclient = new bbt.Connector({keyId: 'ACCESS KEY', secretKey: 'SECURITY KEY'});
 
-  bclient.writeResource(
-    {device: 'test_dev', service: 'humid_sensor', resource: 'humidity', value: 80},
+  bclient.write(
+    {channel: 'mychannel', resource: 'resource1', data: 'Hello World'},
     function(err, res) {
       if(err) throw(err);
       console.log(res);
   });
 
-  bclient.readResource({
-    device: 'test_dev',
-    service: 'temp_sensor', 
-    resource: 'temperature', 
-    limit: 5/* Retrieves last 5 records . default is 1 */
+  bclient.read({
+    channel: 'mychannel',
+    resource: 'resource1', 
+    limit: 5/* Retrieves last 5 records */
   }, function(err, res) {
     if(err) throw(err);
     console.log(res);
