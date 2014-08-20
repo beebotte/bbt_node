@@ -15,7 +15,7 @@ var bclient = new bbt.Connector(
   {
     //API keys for your account
     keyId: process.env.ACCESS_KEY,
-    secretKey: process.env.SECURITY_KEY,
+    secretKey: process.env.SECRET_KEY,
     hostname: 'api.beebotte.com', //This is the default host anyway
     port: 80 //This is the default port number anyway
 });
@@ -86,9 +86,9 @@ setInterval(function()
       var avg_cpu = getAvgCpu(cpus, new_cpus);
       //Write a record to the CPU resource
       bclient.write({
-        device: 'my_device',
+        channel: 'my_device',
         resource: 'cpu',
-        value: avg_cpu 
+        data: avg_cpu 
       }, function(err, res) {
         if(err) console.log(err);
       });
@@ -98,9 +98,9 @@ setInterval(function()
         if(err) return console.log(err);
         //Write a record to the memory resource
         bclient.write({
-          device: 'my_device',
+          channel: 'my_device',
           resource: 'memory',
-          value: data
+          data: data
         }, function(err, res) {
           if(err) console.log(err);
         });
@@ -108,6 +108,6 @@ setInterval(function()
       console.log(avg_cpu);
       cpus = new_cpus;
     }
-  }, process.env.FREQUECY || (1000 * 60 /* 1 minute */)
+  }, process.env.FREQUENCY || (1000 * 60 /* 1 minute */)
 );
 

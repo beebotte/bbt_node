@@ -12,7 +12,7 @@ var bclient = new bbt.Connector(
   {
     //API keys for your account
     keyId: process.env.ACCESS_KEY,
-    secretKey: process.env.SECURITY_KEY,
+    secretKey: process.env.SECRET_KEY,
     hostname: 'api.beebotte.com', //This is the default host anyway
     port: 80 //This is the default port number anyway
 });
@@ -27,7 +27,7 @@ var channel = {
   ]
 };
 
-bclient.addChannel(device, function(err, res) {
+bclient.addChannel(channel, function(err, res) {
     if(err) return console.log(err);
     //The channel was created successfully!
     console.log(res);//expecting true as success result
