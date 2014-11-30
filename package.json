@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/beebotte/bbt_node.git"
   },
-  "main": "lib/bbt-node.js",  
+  "main": "./index.js",
   "keywords": [
     "api",
     "rest",
@@ -23,6 +23,7 @@
   ],
   "dependencies": {
     "request": "2.36.0",
+    "socket.io-client": "1.2.0",
     "joi": "4.2.1"
   },
   "license": "MIT"
