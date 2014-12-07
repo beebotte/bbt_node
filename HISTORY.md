@@ -1,6 +1,9 @@
 History
 =======
 
+## 0.6.0
+* Call chaining in Stream API
+
 ## 0.5.0
 * Addition support for real time Pub/Sub API with Socket.io and MQTT transports [#5](https://github.com/beebotte/bbt_node/issues/5)
 * Set code in strict mode
