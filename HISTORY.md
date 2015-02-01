@@ -1,6 +1,9 @@
 History
 =======
 
+## 0.6.2
+* Add authentication using Secret Key for Socket.io transport
+
 ## 0.6.1
 * Fix unsubscriptions in Stream API [#8](https://github.com/beebotte/bbt_node/issues/8)
 
