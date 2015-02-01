@@ -109,6 +109,14 @@ Remember, Beebotte resource description uses a two levels hierarchy:
   //Include the Beebotte SDK for nodejs
   var bbt = require('beebotte');
 
+  //Replace access and secret keys by those of your account
+  var transport = {
+    type: 'socketio',
+    apiKey: 'ACCESS KEY',
+    secretKey: 'SECRET KEY'
+  }
+
+  // Alternatively, you could specify an [authentication endpoint](http://beebotte.com/docs/clientauth)
   //Replace access key by that of your account
   var transport = {
     type: 'socketio',
