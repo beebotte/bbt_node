@@ -116,7 +116,7 @@ Remember, Beebotte resource description uses a two levels hierarchy:
     secretKey: 'SECRET KEY'
   }
 
-  // Alternatively, you could specify an [authentication endpoint](http://beebotte.com/docs/clientauth)
+  // Alternatively, you could specify an authentication endpoint (see beebotte.com/docs/clientauth)
   //Replace access key by that of your account
   var transport = {
     type: 'socketio',
