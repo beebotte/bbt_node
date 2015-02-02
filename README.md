@@ -103,6 +103,16 @@ Remember, Beebotte resource description uses a two levels hierarchy:
   });
 ```
 
+You can use the Channel Token to authenticate the connection. Using the Channel Token grants read and write access to any resource of that channel. This is the recommended authentication sc
+heme.
+```javascript
+  //Replace Channel Token by that of your account
+  var transport = {
+    type: 'mqtt',
+    token: 'CHANNEL_TOKEN'
+  }
+```
+
 ### Stream Connector - Socket.io transport
 
 ```javascript
@@ -138,6 +148,25 @@ Remember, Beebotte resource description uses a two levels hierarchy:
       client.publish( 'mychannel', 'myresource', 'Hello World');
     });
   });
+```
+
+You can use the Channel Token to authenticate the connection. Using the Channel Token grants read and write access to any resource of that channel. This is the recommended authentication scheme.
+```javascript
+  //Replace Channel Token by that of your account
+  var transport = {
+    type: 'socketio',
+    token: 'CHANNEL_TOKEN'
+  }
+```
+
+Alternatively, you could specify an authentication endpoint (see (client authentication)[beebotte.com/docs/clientauth])
+```javascript
+  //Replace access key by that of your account
+  var transport = {
+    type: 'socketio',
+    apiKey: 'ACCESS KEY',
+    auth_endpoint: 'YOUR AUTH ENDPOINT', //See https://beebotte.com/docs/clientauth
+  }
 ```
 
 ## License
