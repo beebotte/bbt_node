@@ -1,6 +1,9 @@
 History
 =======
 
+## 0.6.3
+* Add authentication using Channel Token for Socket.io transport
+
 ## 0.6.2
 * Add authentication using Secret Key for Socket.io transport
 
