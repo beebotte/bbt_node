@@ -1,6 +1,9 @@
 History
 =======
 
+## 0.6.4
+* Fix subscriptions with read access set to false in Stream API [#10](https://github.com/beebotte/bbt_node/issues/10)
+
 ## 0.6.3
 * Add authentication using Channel Token for Socket.io transport
 
