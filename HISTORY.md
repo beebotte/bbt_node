@@ -1,6 +1,9 @@
 History
 =======
 
+## 0.6.5
+* Fix endpoint authentication for Socket.io transport when using GET method and userinfo is a JSON object [#11](https://github.com/beebotte/bbt_node/issues/11)
+
 ## 0.6.4
 * Fix subscriptions with read access set to false in Stream API [#10](https://github.com/beebotte/bbt_node/issues/10)
 
