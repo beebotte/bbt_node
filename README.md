@@ -170,6 +170,6 @@ Alternatively, you could specify an authentication endpoint (see (client authent
 ```
 
 ## License
-Copyright 2013 - 2014 Beebotte.
+Copyright 2015 Beebotte.
 
 [The MIT License](http://opensource.org/licenses/MIT)
