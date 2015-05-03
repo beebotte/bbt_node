@@ -30,7 +30,7 @@
     "request": "2.36.0",
     "socket.io-client": "1.2.0",
     "joi": "4.2.1",
-    "mqtt": "0.3.13"
+    "mqtt": "1.1.3"
   },
   "license": "MIT"
 }
