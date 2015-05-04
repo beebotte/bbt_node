@@ -159,7 +159,7 @@ You can use the Channel Token to authenticate the connection. Using the Channel 
   }
 ```
 
-Alternatively, you could specify an authentication endpoint (see (client authentication)[beebotte.com/docs/clientauth])
+Alternatively, you could specify an authentication endpoint (see [client authentication](beebotte.com/docs/clientauth))
 ```javascript
   //Replace access key by that of your account
   var transport = {
