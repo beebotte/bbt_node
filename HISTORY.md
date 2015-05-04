@@ -1,6 +1,11 @@
 History
 =======
 
+## 0.7.0
+* Add **update** subscription (private API)
+* Improve events workflow for MQTT and Websockets transports
+* Ensure responses are JSON formatted in the REST client
+
 ## 0.6.5
 * Fix endpoint authentication for Socket.io transport when using GET method and userinfo is a JSON object [#11](https://github.com/beebotte/bbt_node/issues/11)
 
