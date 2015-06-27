@@ -1,6 +1,13 @@
 History
 =======
 
+## 0.7.2
+* Fix # 14
+* Naming harmonization: use `apiKey` instead of `keyId` in the REST client
+
+## 0.7.1
+* Fix #13
+
 ## 0.7.0
 * Add **update** subscription (private API)
 * Improve events workflow for MQTT and Websockets transports
