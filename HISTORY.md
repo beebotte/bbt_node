@@ -3,7 +3,6 @@ History
 
 ## 0.7.3
 * Fix [#15](https://github.com/beebotte/bbt_node/issues/15): add support for protocol bridging
-* Naming harmonization: use `apiKey` instead of `keyId` in the REST client
 
 ## 0.7.2
 * Fix [#14](https://github.com/beebotte/bbt_node/issues/14)
