@@ -44,8 +44,8 @@ Remember, Beebotte resource description uses a two levels hierarchy:
   var bbt = require('beebotte');
 
   //Create a Beebotte connector
-  //Replace access key and secret key by those of your account
-  var client = new bbt.Connector({keyId: 'ACCESS KEY', secretKey: 'SECRET KEY'});
+  //Replace API key and secret key by those of your account
+  var client = new bbt.Connector({apiKey: 'API KEY', secretKey: 'SECRET KEY'});
 
   //write (persistent message) to a given channel & resource
   client.write(
@@ -80,10 +80,10 @@ Remember, Beebotte resource description uses a two levels hierarchy:
   //Include the Beebotte SDK for nodejs
   var bbt = require('beebotte');
 
-  //Replace access and secret keys by those of your account
+  //Replace API and secret keys by those of your account
   var transport = {
     type: 'mqtt',
-    apiKey: 'ACCESS KEY', 
+    apiKey: 'API KEY', 
     secretKey: 'SECRET KEY',
   }
   
@@ -119,18 +119,18 @@ heme.
   //Include the Beebotte SDK for nodejs
   var bbt = require('beebotte');
 
-  //Replace access and secret keys by those of your account
+  //Replace API and secret keys by those of your account
   var transport = {
     type: 'socketio',
-    apiKey: 'ACCESS KEY',
+    apiKey: 'API KEY',
     secretKey: 'SECRET KEY'
   }
 
   // Alternatively, you could specify an authentication endpoint (see beebotte.com/docs/clientauth)
-  //Replace access key by that of your account
+  //Replace API key by that of your account
   var transport = {
     type: 'socketio',
-    apiKey: 'ACCESS KEY', 
+    apiKey: 'API KEY', 
     auth_endpoint: 'YOUR AUTH ENDPOINT', //See https://beebotte.com/docs/clientauth 
   }
   
@@ -161,10 +161,10 @@ You can use the Channel Token to authenticate the connection. Using the Channel 
 
 Alternatively, you could specify an authentication endpoint (see [client authentication](beebotte.com/docs/clientauth))
 ```javascript
-  //Replace access key by that of your account
+  //Replace API key by that of your account
   var transport = {
     type: 'socketio',
-    apiKey: 'ACCESS KEY',
+    apiKey: 'API KEY',
     auth_endpoint: 'YOUR AUTH ENDPOINT', //See https://beebotte.com/docs/clientauth
   }
 ```
