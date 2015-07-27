@@ -10,8 +10,8 @@ var bbt = require('../../lib/bbt-node');
 
 var bclient = new bbt.Connector(
   {
-    //API keys for your account
-    keyId: process.env.ACCESS_KEY,
+    //API and secret keys for your account
+    apiKey: process.env.API_KEY,
     secretKey: process.env.SECRET_KEY,
     hostname: 'api.beebotte.com', //This is the default host anyway
     port: 80 //This is the default port number anyway
