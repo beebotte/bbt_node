@@ -1,6 +1,11 @@
 History
 =======
 
+## 0.7.4
+* Fix [#21](https://github.com/beebotte/bbt_node/issues/21): enable client reconnection after *client.disconnect()* has been called
+* Update dependencies
+* Update Joi API
+
 ## 0.7.3
 * Fix [#15](https://github.com/beebotte/bbt_node/issues/15): add support for protocol bridging
 
