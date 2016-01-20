@@ -1,6 +1,10 @@
 History
 =======
 
+## 0.7.5
+* Fix [#22](https://github.com/beebotte/bbt_node/issues/22): re-establish support for node version >= 0.10.40
+* indicate supported node and npm versions in package.json
+
 ## 0.7.4
 * Fix [#21](https://github.com/beebotte/bbt_node/issues/21): enable client reconnection after *client.disconnect()* has been called
 * Update dependencies
