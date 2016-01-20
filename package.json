@@ -29,7 +29,7 @@
   "dependencies": {
     "request": "2.67.0",
     "socket.io-client": "1.4.4",
-    "joi": "7.2.1",
+    "joi": "6.10.0",
     "mqtt": "1.6.3"
   },
   "license": "MIT"
