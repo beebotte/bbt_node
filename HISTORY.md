@@ -1,6 +1,13 @@
 History
 =======
 
+## 0.8.0
+* Fix [#16](https://github.com/beebotte/bbt_node/issues/16)
+* Fix [#24](https://github.com/beebotte/bbt_node/issues/24)
+* Fix [#25](https://github.com/beebotte/bbt_node/issues/25)
+* Fix [#26](https://github.com/beebotte/bbt_node/issues/26)
+* use version from package.json instead of an explicit version file
+
 ## 0.7.5
 * Fix [#22](https://github.com/beebotte/bbt_node/issues/22): re-establish support for node version >= 0.10.40
 * indicate supported node and npm versions in package.json
