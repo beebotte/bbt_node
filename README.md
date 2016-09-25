@@ -1,6 +1,9 @@
 Beebotte Node.JS SDK
 ====================
 
+[![npm version](https://badge.fury.io/js/beebotte.svg)](https://badge.fury.io/js/beebotte)
+
+
 | what          | where                                  |
 |---------------|----------------------------------------|
 | overview      | http://beebotte.com/overview           |
