@@ -1,6 +1,9 @@
 History
 =======
 
+## 1.0.0
+* update dependencies
+
 ## 0.8.0
 * Fix [#16](https://github.com/beebotte/bbt_node/issues/16)
 * Fix [#24](https://github.com/beebotte/bbt_node/issues/24)
@@ -53,7 +56,7 @@ History
 ## 0.5.0
 * Addition support for real time Pub/Sub API with Socket.io and MQTT transports [#5](https://github.com/beebotte/bbt_node/issues/5)
 * Set code in strict mode
-* Updated README 
+* Updated README
 
 ## 0.4.0
 
