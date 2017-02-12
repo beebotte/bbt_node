@@ -1,6 +1,11 @@
 History
 =======
 
+## 1.0.1
+* Add test cases [#29](https://github.com/beebotte/bbt_node/issues/29)
+* Add linting script [#30](https://github.com/beebotte/bbt_node/issues/30)
+* Add dev dependencies and npm scripts
+
 ## 1.0.0
 * update dependencies
 
