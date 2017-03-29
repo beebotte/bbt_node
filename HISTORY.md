@@ -1,6 +1,9 @@
 History
 =======
 
+## 1.1.0
+* Fix [#31](https://github.com/beebotte/bbt_node/issues/31)
+
 ## 1.0.1
 * Add test cases [#29](https://github.com/beebotte/bbt_node/issues/29)
 * Add linting script [#30](https://github.com/beebotte/bbt_node/issues/30)
