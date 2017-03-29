@@ -473,13 +473,24 @@ describe('beebotte.rest channel delete', function() {
 
 })
 
-describe('beebotte.connector user connection management', function() {
+describe('beebotte.connector websocket user connection management', function() {
   this.timeout(15000)
   var bclient = createConnection()
 
   it('should get user connections with a given userid without error', function(done) {
+    bclient.getUserConnections(function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      console.log(res)
+      //expect(res[0]).to.be.instanceof(Array)
+      done()
+    })
+  })
+
+  it('should get user connections with a given userid without error', function(done) {
     bclient.getUserConnections({userid: '1234567890'}, function(err, res) {
       if(err) return done(err)
+      console.log(res)
       expect(res).to.be.instanceof(Array)
       done()
     })
@@ -508,5 +519,55 @@ describe('beebotte.connector user connection management', function() {
       done()
     })
   })
+})
 
+describe('beebotte.connector mqtt user connection management', function() {
+
+  this.timeout(15000)
+  var bclient = createConnection()
+
+  it('should get user connections with a given userid without error', function(done) {
+    bclient.getUserConnections({protocol: 'mqtt'}, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      console.log(res)
+      //expect(res[0]).to.be.instanceof(Array)
+      done()
+    })
+  })
+
+  it('should get user connections with a given userid and session id without error', function(done) {
+    bclient.getUserConnections({
+      userid: '1234567890',
+      protocol: 'mqtt',
+      sid: 'abcdefg123456'
+    }, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      done()
+    })
+  })
+
+  it('should drop user connections with a given userid without error', function(done) {
+    bclient.dropUserConnection({
+      userid: '1234567890',
+      protocol: 'mqtt'
+    }, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.equal('')
+      done()
+    })
+  })
+
+  it('should drop user connections with a given userid and session id without error', function(done) {
+    bclient.dropUserConnection({
+      userid: '1234567890',
+      protocol: 'mqtt',
+      sid: 'abcdefg123456'
+    }, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.equal('')
+      done()
+    })
+  })
 })
