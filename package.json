@@ -1,7 +1,7 @@
 {
   "name": "beebotte",
   "description": "Beebotte is an open cloud platform for real time connected objects. This package provides the implementation of Beebotte API in nodejs.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Bachar Wehbi",
     "email": "bwehbi@beebotte.com"
