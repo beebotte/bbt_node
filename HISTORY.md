@@ -1,6 +1,10 @@
 History
 =======
 
+## 1.2.0
+* Add `Update` REST API [#27](https://github.com/beebotte/bbt_node/issues/27)
+* Add `Delete` REST API [#28](https://github.com/beebotte/bbt_node/issues/28)
+
 ## 1.1.0
 * Fix [#31](https://github.com/beebotte/bbt_node/issues/31)
 
