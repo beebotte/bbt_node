@@ -1,6 +1,9 @@
 History
 =======
 
+## 1.2.1
+* Fix [#32](https://github.com/beebotte/bbt_node/issues/27): update MQTT.js dependency to address CVE-2017-10910
+
 ## 1.2.0
 * Add `Update` REST API [#27](https://github.com/beebotte/bbt_node/issues/27)
 * Add `Delete` REST API [#28](https://github.com/beebotte/bbt_node/issues/28)
