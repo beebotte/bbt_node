@@ -1,5 +1,10 @@
 History
 =======
+## 1.3.0
+* Fix [#36](https://github.com/beebotte/bbt_node/issues/36): Add support for Beebotte IAM Token management
+* Fix [#35](https://github.com/beebotte/bbt_node/issues/35): Add support for Beerules management
+* Enhance MQTT test cases [#29](https://github.com/beebotte/bbt_node/issues/29)
+* Update MQTT version in package.json
 
 ## 1.2.2
 * Fix [#33](https://github.com/beebotte/bbt_node/issues/33): Update read API limit to 50000 records per call
