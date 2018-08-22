@@ -1,25 +1,25 @@
-var chai = require('chai'),
-    assert = chai.assert,
-    expect = chai.expect,
-    bbt = require('../index')
+var async = require('async')
+var chai = require('chai')
+var assert = chai.assert
+var expect = chai.expect
+var bbt = require('../index')
 
 var token = ''
-  , hostname = 'api.beebotte.com'
+var hostname = 'api.beebotte.com'
+var beeruleid = null
 
 function createConnection() {
   return new bbt.Connector({
     apiKey: process.env.APIKEY,
-    secretKey: process.env.SECRETKEY
-    hostname: hostname,
-    port: 80
+    secretKey: process.env.SECRETKEY,
+    hostname: hostname
   })
 }
 
 function createConnectionToken() {
   return new bbt.Connector({
     token: token,
-    hostname: hostname,
-    port: 80
+    hostname: hostname
   })
 }
 
@@ -38,8 +38,10 @@ describe('beebotte.rest', function() {
         {name: 'res2', description: 'res2',  vtype: 'string'},
         {name: 'res3', vtype: 'any'}
       ]
-    }, function(err, res) {
-      if(err) return done(err)
+    }, function (err, res) {
+      if (err) {
+        return done(err)
+      }
       expect(res).to.be.equal(true)
       bclient.getChannel('channeltest', function(err, res) {
         if(err) return done(err)
@@ -214,6 +216,704 @@ describe('beebotte.rest', function() {
   })
 })
 
+describe('Beebotte IAM Token Schema', function() {
+
+  this.timeout(15000)
+  var bclient = createConnection()
+
+  var tokenid
+  var tokenval
+
+  var testtoken1 = {
+    name: 'my token',
+    description: 'some description',
+    acl: [{
+      action: 'data:read',
+    }]
+  }
+
+  var testtoken2 = {
+    name: 'my token',
+    description: 'some description',
+    acl: [{
+      action: 'data:read',
+    }, {
+      action: 'data:write',
+    }, {
+      action: 'admin:beerule:read',
+    }]
+  }
+
+  var acl1 = [{
+    action: 'data:write',
+  }, {
+    action: 'admin:beerule:read',
+  }]
+
+  it('It should create an access token with 1 acl rule without errors', function (done) {
+
+    bclient.createIAMToken(testtoken1, (err, doc) => {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc.owner, 'beebotte', 'owner must be beebotte')
+        assert.equal(doc.acl[0].action, 'data:read', 'Action type must be data:read')
+        assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
+        done()
+      }
+    })
+  })
+
+  it('It should create an access token with 3 acl rules without errors', function (done) {
+
+    bclient.createIAMToken(testtoken2, (err, doc) => {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc.owner, 'beebotte', 'owner must be beebotte')
+        assert.equal(doc.acl[0].action, 'data:read', 'Action type must be data:read')
+        assert.equal(doc.acl.length, 3, 'ACL rules must be 3')
+        assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
+        tokenid = doc._id
+        tokenval = doc.token
+        done()
+      }
+    })
+  })
+
+  it('It should get 2 iamtokens', function (done) {
+
+    bclient.getIAMTokens((err, docs) => {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 2, 'Must get total of 2 iam tokens')
+        done()
+      }
+    })
+  })
+
+  it('It should get iamtoken by token id with success', function (done) {
+
+    bclient.getIAMTokenByID(tokenid, (err, doc) => {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc._id, tokenid, 'Must get matching token id')
+        assert.equal(doc.owner, 'beebotte', 'Must get matching iam token owner')
+        assert.equal(doc.token, tokenval, 'Must get matching token value')
+        done()
+      }
+    })
+  })
+
+  it('It should update iamtoken with success', function (done) {
+
+    bclient.updateIAMToken(tokenid, acl1, (err, doc) => {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc._id, tokenid, 'Must get matching token id')
+        assert.equal(doc.owner, 'beebotte', 'Must get matching iam token owner')
+        assert.equal(doc.token, tokenval, 'Must get matching token value')
+        assert.equal(doc.acl[0].action, 'data:write', 'Action type must be data:write')
+        assert.equal(doc.acl.length, 2, 'ACL rules should be 2')
+        assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
+        done()
+      }
+    })
+  })
+
+  it('It should delete iamtoken with success', function (done) {
+
+    bclient.deleteIAMToken(tokenid, (err, doc) => {
+      if (err) {
+        return done(err)
+      } else {
+        bclient.getIAMTokens((err, docs) => {
+          if (err) {
+            return done(err)
+          } else {
+            assert.equal(docs.length, 1, 'Must get total of 1 iam tokens')
+            done()
+          }
+        })
+      }
+    })
+  })
+
+  it('It should delete all iamtoken for beebotte owner', (done) => {
+    bclient.getIAMTokens((err, docs) => {
+      if (err) {
+        return done(err)
+      } else {
+        async.each(docs, (doc, callback) => {
+          bclient.deleteIAMToken(doc._id, callback)
+        }, err => {
+          if (err) {
+            return done(err)
+          } else {
+            done()
+          }
+        })
+      }
+    })
+  })
+})
+
+describe('beebotte.rest create and work with beerules', function() {
+  this.timeout(15000)
+  var bclient = createConnection()
+
+  var testpub = {
+    name: 'pub beerule',
+    description: 'some description',
+    trigger: {
+      event: 'publish',
+      channel: 'channeltest',
+      resource: 'res1'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'publish',
+      channel: 'channeltest1',
+      resource: 'res1'
+    }
+  }
+
+  var testpubwithval = {
+    name: 'pub beerule',
+    description: 'some description',
+    trigger: {
+      event: 'write',
+      channel: 'channeltest',
+      resource: '*'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'publish',
+      channel: 'channeltest1',
+      resource: 'res1',
+      value: 'channeltest.res1 + 30'
+    }
+  }
+
+  var testwrite = {
+    name: 'write beerule',
+    description: 'some description',
+    trigger: {
+      event: 'write',
+      channel: 'channeltest',
+      resource: 'res1'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'write',
+      channel: 'channeltest1',
+      resource: 'res2'
+    }
+  }
+
+  var testwritewithval = {
+    name: 'write beerule',
+    description: 'some description',
+    trigger: {
+      event: 'publish',
+      channel: 'channeltest',
+      resource: '*'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'write',
+      channel: 'channeltest1',
+      resource: 'res2',
+      value: 'channeltest.res1 + 25'
+    }
+  }
+
+  var testsms = {
+    name: 'sms beerule',
+    description: 'some description',
+    trigger: {
+      event: 'connect',
+      channel: '*',
+      resource: 'res1'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'sms',
+      to: '+33625689452'
+    }
+  }
+
+  var testemail = {
+    name: 'email beerule',
+    description: 'some description',
+    trigger: {
+      event: 'write',
+      channel: 'channeltest',
+      resource: 'res1'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'email',
+      to: 'bwehbi@beebotte.com'
+    }
+  }
+
+  var testwebhook = {
+    name: 'webhook beerule',
+    description: 'some description',
+    trigger: {
+      event: 'write',
+      channel: 'channeltest',
+      resource: 'res1'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'webhook',
+      endpoint: 'https://demo0531850.mockable.io/'
+    }
+  }
+
+  var testwildcards = {
+    name: 'email notif',
+    description: 'some description',
+    trigger: {
+      event: 'write',
+      channel: '*',
+      resource: '*'
+    },
+    condition: 'channeltest.res1 > 10',
+    action: {
+      type: 'email',
+      to: 'bwehbi@beebotte.com'
+    }
+  }
+
+  var testwithowner = {
+    name: 'email notif',
+    description: 'some description',
+    owner: 'bachwehbi',
+    trigger: {
+      event: 'write',
+      channel: 'channeltest',
+      resource: '*'
+    },
+    condition: 'channeltest.res1 > 10',
+    action: {
+      type: 'email',
+      to: 'bwehbi@beebotte.com'
+    }
+  }
+
+  it('should create a publish beerule without error', function(done) {
+    bclient.createBeerule(testpub, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res.owner).to.be.equal('beebotte')
+      expect(res.action.type).to.be.equal('publish')
+      done()
+    })
+  })
+
+  it('should create a publish beerule with value without error', function(done) {
+    bclient.createBeerule(testpubwithval, function(err, res) {
+
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res).to.have.nested.property('action.value')
+      expect(res.owner).to.be.equal('beebotte')
+      expect(res.action.type).to.be.equal('publish')
+      beeruleid = res._id
+      done()
+    })
+  })
+
+  it('should invoke beerule without error', function(done) {
+    bclient.invokeBeerule(beeruleid, {
+      channel: 'channeltest',
+      resource: 'someresource',
+      data: 123
+    }, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      return done()
+    })
+  })
+
+  it('should fail invoking beerule with wrong channel name', function(done) {
+    bclient.invokeBeerule(beeruleid, {
+      channel: 'notexist',
+      resource: 'someresource',
+      data: 123
+    }, function(err, res) {
+      if (err) {
+        return done()
+      }
+
+      return done(new Error('Should have failed invoking Beerule: channel mismatch'))
+    })
+  })
+
+  it('should create a write beerule without error', function(done) {
+    bclient.createBeerule(testwrite, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res.owner).to.be.equal('beebotte')
+      expect(res.action.type).to.be.equal('write')
+      done()
+    })
+  })
+
+  it('should create a write beerule with value without error', function(done) {
+    bclient.createBeerule(testwritewithval, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res).to.have.nested.property('action.value')
+      expect(res.owner).to.be.equal('beebotte')
+      expect(res.action.type).to.be.equal('write')
+      done()
+    })
+  })
+
+  it('should create an sms beerule without error', function(done) {
+    bclient.createBeerule(testsms, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res.owner).to.be.equal('beebotte')
+      expect(res.action.type).to.be.equal('sms')
+      done()
+    })
+  })
+
+  it('should create an email beerule without error', function(done) {
+    bclient.createBeerule(testemail, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res.owner).to.be.equal('beebotte')
+      expect(res.action.type).to.be.equal('email')
+      beeruleid = res._id
+      done()
+    })
+  })
+
+  it('should create a webhook beerule without error', function(done) {
+    bclient.createBeerule(testwebhook, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res.owner).to.be.equal('beebotte')
+      expect(res.action.type).to.be.equal('webhook')
+      done()
+    })
+  })
+
+  it('It should get a beerule by id without errors', function (done) {
+
+    bclient.getBeerule(beeruleid, function (err, doc) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc._id, beeruleid, 'Must get same id as requested')
+        assert.equal(doc.owner, 'beebotte', 'Owner mismatch')
+        assert.equal(doc.action.type, 'email', 'Type must be email')
+        done()
+      }
+    })
+  })
+
+  it('It should disable a beerule by id without errors', function (done) {
+
+    bclient.setBeeruleStatus(beeruleid, false, function (err, doc) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc._id, beeruleid, 'Must get same id as requested')
+        assert.equal(doc.owner, 'beebotte', 'Owner mismatch')
+        assert.equal(doc.action.type, 'email', 'Type must be email')
+        assert.equal(doc.enabled, false, 'Beerule must be disabled now')
+        done()
+      }
+    })
+  })
+
+  it('should fail invoking disabled beerule', function(done) {
+    bclient.invokeBeerule(beeruleid, {
+      channel: 'channeltest',
+      resource: 'res1',
+      data: 123
+    }, function(err, res) {
+
+      if (err) {
+        return done()
+      }
+
+      return done(new Error('Should have failed invoking disabled Beerule'))
+    })
+  })
+
+  it('It should fail getting a beerule with wrong id', function (done) {
+
+    bclient.getBeerule('fakeid', function (err, doc) {
+      if (err) {
+        return done()
+      } else {
+        done(new Error('Must not be able to request a beerule with fake id'))
+      }
+    })
+  })
+
+  it('It should get all beerules without errors', function (done) {
+
+    bclient.getBeerules(function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get all beerules without errors - empty argument', function (done) {
+
+    bclient.getBeerules({}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get all beerules without errors - null argument', function (done) {
+
+    bclient.getBeerules(null, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get all publish beerules without errors', function (done) {
+
+    bclient.getBeerules({type: 'publish'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 2, 'Must get total of 2 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get all write beerules without errors', function (done) {
+
+    bclient.getBeerules({type: 'write'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 2, 'Must get total of 2 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get all sms beerules without errors', function (done) {
+
+    bclient.getBeerules({type: 'sms'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get all email beerules without errors', function (done) {
+
+    bclient.getBeerules({type: 'email'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get all webhook beerules without errors', function (done) {
+
+    bclient.getBeerules({type: 'webhook'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get one publish beerule with write trigger', function (done) {
+
+    bclient.getBeerules({type: 'publish', event: 'write'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get one write beerule with publish trigger', function (done) {
+
+    bclient.getBeerules({type: 'write', event: 'publish'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get one sms beerule connect trigger', function (done) {
+
+    bclient.getBeerules({type: 'sms', event: 'connect'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get one email beerule write trigger', function (done) {
+
+    bclient.getBeerules({type: 'email', event: 'write'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get four beerules with write trigger', function (done) {
+
+    bclient.getBeerules({event: 'write'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 4, 'Must get total of 4 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get two beerules with publish trigger', function (done) {
+
+    bclient.getBeerules({event: 'publish'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 2, 'Must get total of 2 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get 7 beerules with trigger channel test', function (done) {
+
+    bclient.getBeerules({channel: 'channeltest'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should get 7 beerules with trigger resource res1', function (done) {
+
+    bclient.getBeerules({resource: 'res1'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        done()
+      }
+    })
+  })
+
+  it('It should fail creating beerule with wildcard trigger channel and resource', function (done) {
+
+    bclient.createBeerule(testwildcards, function(err, res) {
+      if (err) {
+        return done()
+      } else {
+        done(new Error('Must not be possible to query beerules with trigger channel and resource set to wirldcard'))
+      }
+    })
+  })
+
+  it('It should fail creating beerule with explicit (wrong) owner', function (done) {
+    bclient.createBeerule(testwithowner, function(err, res) {
+      if (err) {
+        return done()
+      } else {
+        done(new Error('Must not be possible to create beerule with wrong owner'))
+      }
+    })
+  })
+})
+
 describe('beebotte.rest read/write operations', function() {
   this.timeout(15000)
   var bclient = createConnection()
@@ -308,7 +1008,7 @@ describe('beebotte.rest read/write operations', function() {
 
   it('should publish to BBT 2 records without error', function(done) {
     bclient.publishBulk({channel: 'channeltest', records: [
-      {resource: 'res1', data: 1},
+      {resource: 'res1', data: 11},
       {resource: 'res2', data: '2'},
     ]}, function(err, res) {
       if(err) return done(err)
@@ -318,7 +1018,7 @@ describe('beebotte.rest read/write operations', function() {
   })
 
   it('should publish to BBT without error', function(done) {
-    bclient.publish({channel: 'channeltest', resource: 'res1', data: 1}, function(err, res) {
+    bclient.publish({channel: 'channeltest', resource: 'res1', data: 111}, function(err, res) {
       if(err) return done(err)
       expect(res).to.be.equal(true)
       done()
@@ -385,6 +1085,45 @@ describe('beebotte.rest read/write operations Token Auth', function() {
       if(err) return done(err)
       expect(res).to.be.equal(true)
       done()
+    })
+  })
+})
+
+describe('beebotte.rest delete beerules', function() {
+  var bclient = createConnection()
+
+  it('It should delete rule by id without error', function (done) {
+    bclient.deleteBeerule(beeruleid, function (err, doc) {
+      if (err) {
+        return done(err)
+      } else {
+        bclient.getBeerules(function (err, docs) {
+          if (err) {
+            return done(err)
+          } else {
+            assert.equal(docs.length, 6, 'Must get total of 6 beerules')
+            done()
+          }
+        })
+      }
+    })
+  })
+
+  it('It should delete all beerules', function (done) {
+    bclient.getBeerules(function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        async.each(docs, function (doc, callback) {
+          bclient.deleteBeerule(doc._id, callback)
+        }, function (err) {
+          if (err) {
+            return done(err)
+          } else {
+            done()
+          }
+        })
+      }
     })
   })
 })
@@ -481,8 +1220,6 @@ describe('beebotte.connector websocket user connection management', function() {
     bclient.getUserConnections(function(err, res) {
       if(err) return done(err)
       expect(res).to.be.instanceof(Array)
-      console.log(res)
-      //expect(res[0]).to.be.instanceof(Array)
       done()
     })
   })
@@ -490,7 +1227,6 @@ describe('beebotte.connector websocket user connection management', function() {
   it('should get user connections with a given userid without error', function(done) {
     bclient.getUserConnections({userid: '1234567890'}, function(err, res) {
       if(err) return done(err)
-      console.log(res)
       expect(res).to.be.instanceof(Array)
       done()
     })
@@ -530,8 +1266,6 @@ describe('beebotte.connector mqtt user connection management', function() {
     bclient.getUserConnections({protocol: 'mqtt'}, function(err, res) {
       if(err) return done(err)
       expect(res).to.be.instanceof(Array)
-      console.log(res)
-      //expect(res[0]).to.be.instanceof(Array)
       done()
     })
   })

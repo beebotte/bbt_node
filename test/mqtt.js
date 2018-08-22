@@ -22,6 +22,8 @@ function createMqttConnection(ssl) {
 
 describe('beebotte.mqtt', function() {
 
+  this.timeout(10000)
+
   var mqttclient
   var msg = null
 
@@ -115,13 +117,14 @@ describe('beebotte.mqtt', function() {
 
     setTimeout(function () {
       if (!disconnected) {
-        done('Failed to receive disconnected event after 2 seconds from disconnection')
+        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+      } else {
+        done()
       }
     }, 5000)
 
     mqttclient.on('disconnected', function () {
       disconnected = true
-      done()
     })
 
     mqttclient.disconnect()
