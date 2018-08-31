@@ -1,5 +1,10 @@
 History
 =======
+
+## 1.4.0
+* Add MQTT and Socketio test cases [#29](https://github.com/beebotte/bbt_node/issues/29)
+* Improve code quality and readability [#30](https://github.com/beebotte/bbt_node/issues/30)
+
 ## 1.3.0
 * Fix [#36](https://github.com/beebotte/bbt_node/issues/36): Add support for Beebotte IAM Token management
 * Fix [#35](https://github.com/beebotte/bbt_node/issues/35): Add support for Beerules management
