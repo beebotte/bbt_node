@@ -3,14 +3,12 @@ var chai = require('chai')
 var assert = chai.assert
 var expect = chai.expect
 var bbt = require('../index')
-var mqtt = require('mqtt')
 
 var ctoken = ''
 var oktoken = ''
 var kotoken = ''
-
 var hostname = 'api.beebotte.com'
-var mqtthostname = 'mqtt.beebotte.com'
+var wshostname = 'ws.beebotte.com'
 
 function createConnection() {
   return new bbt.Connector({
@@ -21,23 +19,30 @@ function createConnection() {
   });
 }
 
-function createMqttConnection (ssl) {
+function createWsConnection (ssl) {
   return new bbt.Stream({transport: {
-    type: 'mqtt',
-    mqtt_host: mqtthostname, //default can be omitted
-    ssl: ssl,
-    clientId: 'bbt_test-bbttest-' + Math.floor(Math.random() * 1000000000).toString(),
+    type: 'socketio',
     apiKey: process.env.APIKEY,
-    secretKey: process.env.SECRETKEY
+    secretKey: process.env.SECRETKEY,
+    ws_host: wshostname, //default can be omitted
+    ssl: ssl
+  },
+  userinfo: {
+    username: 'someuser',
+    userid: '1234567890'
   }});
 }
 
-function createMqttConnectionToken (ssl, token) {
+function createWsConnectionToken (ssl, token) {
   return new bbt.Stream({transport: {
-    type: 'mqtt',
-    mqtt_host: mqtthostname, //default can be omitted
+    type: 'socketio',
+    ws_host: wshostname, //default can be omitted
     ssl: ssl,
     token: token
+  },
+  userinfo: {
+    username: 'someuser',
+    userid: '1234567890'
   }});
 }
 
@@ -80,7 +85,7 @@ describe('beebotte.rest - give me test tokens', function() {
       if (err) {
         return done(err)
       } else {
-        assert.equal(doc.owner, 'bbt_test', 'owner must be beebotte')
+        assert.equal(doc.owner, 'bbt_test', 'owner must be bbt_test')
         assert.equal(doc.acl[0].action, 'data:read', 'Action type must be data:read')
         assert.equal(doc.acl[1].action, 'data:write', 'Action type must be data:write')
         assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
@@ -96,7 +101,7 @@ describe('beebotte.rest - give me test tokens', function() {
       if (err) {
         return done(err)
       } else {
-        assert.equal(doc.owner, 'bbt_test', 'owner must be beebotte')
+        assert.equal(doc.owner, 'bbt_test', 'owner must be bbt_test')
         assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
         kotoken = doc.token
         done()
@@ -105,12 +110,12 @@ describe('beebotte.rest - give me test tokens', function() {
   })
 })
 
-describe('beebotte.mqtt Signaling tests. API Keys Auth', function () {
+describe('beebotte.ws Signaling tests. API Keys Auth', function () {
 
   this.timeout(15000)
 
-  var mqttclient
-  var mqttclientsig
+  var wsclient
+  var wsclientsig
   var msg = null
   var sigmsg = null
 
@@ -123,139 +128,7 @@ describe('beebotte.mqtt Signaling tests. API Keys Auth', function () {
   }
 
   before(function() {
-    mqttclientsig = createMqttConnection(true)
-  })
-
-  it('should subscribe to signaling channel with success', function (done){
-
-    var subscribed = false
-
-    setTimeout(function () {
-      if (!subscribed) {
-        return done(new Error('Failed to subscribe to signaling channel'))
-      }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
-      expect(sigmsg.data.channel).to.be.equal('signaling')
-      expect(sigmsg.data.resource).to.be.equal('#')
-      expect(sigmsg.channel).to.be.equal('signaling')
-      expect(sigmsg.resource).to.be.equal('subscribe')
-      done()
-    }, 1000)
-
-    mqttclientsig.once('subscribed', function (sub) {
-      expect(sub.channel).to.be.equal('signaling')
-      expect(sub.resource).to.be.equal('#')
-      subscribed = true
-    })
-
-    mqttclientsig.subscribe('signaling', {read: true, write: false}, onSig)
-  })
-
-  it('should subscribe to signaling channel with success', function (done){
-
-    var subscribed = false
-
-    setTimeout(function () {
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
-      expect(sigmsg.channel).to.be.equal('signaling')
-      expect(sigmsg.resource).to.be.equal('connect')
-      done()
-    }, 1000)
-
-    mqttclient = createMqttConnection(true)
-  })
-
-  it('should receive subscribe signaling message with success', function (done){
-
-    var subscribed = false
-
-    setTimeout(function () {
-      if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
-      }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
-      expect(sigmsg.data.channel).to.be.equal('test')
-      expect(sigmsg.data.resource).to.be.equal('test')
-      expect(sigmsg.channel).to.be.equal('signaling')
-      expect(sigmsg.resource).to.be.equal('subscribe')
-      done()
-    }, 1000)
-
-    mqttclient.on('subscribed', function (sub) {
-      expect(sub.channel).to.be.equal('test')
-      expect(sub.resource).to.be.equal('test')
-      subscribed = true
-    })
-
-    mqttclient.subscribe('test', 'test', onSub)
-  })
-
-  it('should unsubscribe from channel with success', function (done){
-
-    var unsubscribed = false
-
-    setTimeout(function () {
-      if (!unsubscribed) {
-        done(new Error('Failed to unsubscribe after 2 seconds from unsubscription request'))
-      }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
-      expect(sigmsg.data.channel).to.be.equal('test')
-      expect(sigmsg.data.resource).to.be.equal('test')
-      expect(sigmsg.channel).to.be.equal('signaling')
-      expect(sigmsg.resource).to.be.equal('unsubscribe')
-      done()
-    }, 1000)
-
-    mqttclient.on('unsubscribed', function (sub) {
-      expect(sub.channel).to.be.equal('test')
-      expect(sub.resource).to.be.equal('test')
-      unsubscribed = true
-    })
-
-    mqttclient.unsubscribe('test', 'test')
-  })
-
-  it('should disconnect with success', function (done){
-
-    var disconnected = false
-
-    setTimeout(function () {
-      if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
-      } else {
-        expect(sigmsg.data.protocol).to.be.equal('mqtt')
-        expect(sigmsg.channel).to.be.equal('signaling')
-        expect(sigmsg.resource).to.be.equal('disconnect')
-        done()
-      }
-    }, 2000)
-
-    mqttclient.on('disconnected', function () {
-      disconnected = true
-    })
-
-    mqttclient.disconnect()
-  })
-})
-
-describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
-
-  this.timeout(15000)
-
-  var mqttclient
-  var msg = null
-  var sigmsg = null
-
-  function onSub (message) {
-    msg = message.data
-  }
-
-  function onSig (message) {
-    sigmsg = message
-  }
-
-  before(function() {
-    mqttclient = createMqttConnection(true)
+    wsclientsig = createWsConnection(true)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -264,11 +137,11 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
 
     setTimeout(function () {
       if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclientsig.on('connected', function() {
       connected = true
       done()
     })
@@ -282,21 +155,169 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
       if (!subscribed) {
         return done(new Error('Failed to subscribe to signaling channel'))
       }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
       expect(sigmsg.data.channel).to.be.equal('signaling')
-      expect(sigmsg.data.resource).to.be.equal('#')
-      expect(sigmsg.channel).to.be.equal('signaling')
+      expect(sigmsg.data.resource).to.be.equal('*')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
+      expect(sigmsg.resource).to.be.equal('subscribe')
+      done()
+    }, 1000)
+
+    wsclientsig.once('subscribed', function (sub) {
+      expect(sub.channel).to.be.equal('private-signaling')
+      expect(sub.resource).to.be.equal('*')
+      subscribed = true
+    })
+
+    wsclientsig.subscribe('private-signaling', {read: true, write: false}, onSig)
+  })
+
+  it('should subscribe to signaling channel with success', function (done){
+
+    var subscribed = false
+
+    setTimeout(function () {
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
+      expect(sigmsg.resource).to.be.equal('connect')
+      done()
+    }, 1000)
+
+    wsclient = createWsConnection(true)
+  })
+
+  it('should receive subscribe signaling message with success', function (done){
+
+    var subscribed = false
+
+    setTimeout(function () {
+      if (!subscribed) {
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+      }
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
+      expect(sigmsg.data.channel).to.be.equal('test')
+      expect(sigmsg.data.resource).to.be.equal('test')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
+      expect(sigmsg.resource).to.be.equal('subscribe')
+      done()
+    }, 1000)
+
+    wsclient.on('subscribed', function (sub) {
+      expect(sub.channel).to.be.equal('test')
+      expect(sub.resource).to.be.equal('test')
+      subscribed = true
+    })
+
+    wsclient.subscribe('test', 'test', onSub)
+  })
+
+  it('should unsubscribe from channel with success', function (done){
+
+    var unsubscribed = false
+
+    setTimeout(function () {
+      if (!unsubscribed) {
+        return done(new Error('Failed to unsubscribe after 2 seconds from unsubscription request'))
+      }
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
+      expect(sigmsg.data.channel).to.be.equal('test')
+      expect(sigmsg.data.resource).to.be.equal('test')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
+      expect(sigmsg.resource).to.be.equal('unsubscribe')
+      done()
+    }, 1000)
+
+    wsclient.on('unsubscribed', function (sub) {
+      expect(sub.channel).to.be.equal('test')
+      expect(sub.resource).to.be.equal('test')
+      unsubscribed = true
+    })
+
+    wsclient.unsubscribe('test', 'test')
+  })
+
+  it('should disconnect with success', function (done){
+
+    var disconnected = false
+
+    setTimeout(function () {
+      if (!disconnected) {
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+      } else {
+        expect(sigmsg.data.protocol).to.be.equal('socketio')
+        expect(sigmsg.channel).to.be.equal('private-signaling')
+        expect(sigmsg.resource).to.be.equal('disconnect')
+        done()
+      }
+    }, 2000)
+
+    wsclient.on('disconnected', function () {
+      disconnected = true
+    })
+
+    wsclient.disconnect()
+  })
+})
+
+describe('beebotte.ws Positive tests. API Keys Auth', function () {
+
+  this.timeout(15000)
+
+  var wsclient
+  var msg = null
+  var sigmsg = null
+
+  function onSub (message) {
+    msg = message.data
+  }
+
+  function onSig (message) {
+    sigmsg = message
+  }
+
+  before(function() {
+    wsclient = createWsConnection(true)
+  })
+
+  it('should receive connected event upon connection', function (done){
+
+    var connected = false
+
+    setTimeout(function () {
+      if (!connected) {
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
+      }
+    }, 12000)
+
+    wsclient.on('connected', function() {
+      connected = true
+      done()
+    })
+  })
+
+  it('should subscribe to signaling channel with success', function (done){
+
+    var subscribed = false
+
+    setTimeout(function () {
+      if (!subscribed) {
+        return done(new Error('Failed to subscribe to signaling channel'))
+      }
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
+      expect(sigmsg.data.channel).to.be.equal('signaling')
+      expect(sigmsg.data.resource).to.be.equal('*')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
       expect(sigmsg.resource).to.be.equal('subscribe')
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
-      expect(sub.channel).to.be.equal('signaling')
-      expect(sub.resource).to.be.equal('#')
+    wsclient.once('subscribed', function (sub) {
+      expect(sub.channel).to.be.equal('private-signaling')
+      expect(sub.resource).to.be.equal('*')
       subscribed = true
     })
 
-    mqttclient.subscribe('signaling', {read: true, write: false}, onSig)
+    wsclient.subscribe('private-signaling', {read: true, write: false}, onSig)
   })
 
   it('should subscribe to test/test with success', function (done){
@@ -305,48 +326,48 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
 
     setTimeout(function () {
       if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
       }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
       expect(sigmsg.data.channel).to.be.equal('test')
       expect(sigmsg.data.resource).to.be.equal('test')
-      expect(sigmsg.channel).to.be.equal('signaling')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
       expect(sigmsg.resource).to.be.equal('subscribe')
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
+    wsclient.once('subscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       subscribed = true
     })
 
-    mqttclient.subscribe('test', 'test', {read: true, write: true}, onSub)
+    wsclient.subscribe('test', 'test', {read: true, write: true}, onSub)
   })
 
-  it('should subscribe to chan/# with success', function (done){
+  it('should subscribe to chan/* with success', function (done){
 
     var subscribed = false
 
     setTimeout(function () {
       if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
       }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
       expect(sigmsg.data.channel).to.be.equal('chan')
-      expect(sigmsg.data.resource).to.be.equal('#')
-      expect(sigmsg.channel).to.be.equal('signaling')
+      expect(sigmsg.data.resource).to.be.equal('*')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
       expect(sigmsg.resource).to.be.equal('subscribe')
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
+    wsclient.once('subscribed', function (sub) {
       expect(sub.channel).to.be.equal('chan')
-      expect(sub.resource).to.be.equal('#')
+      expect(sub.resource).to.be.equal('*')
       subscribed = true
     })
 
-    mqttclient.subscribe('chan', {read: true, write: true}, onSub)
+    wsclient.subscribe('chan', {read: true, write: true}, onSub)
   })
 
   it('should receive published message to test/test with success', function (done){
@@ -356,7 +377,7 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
       done()
     }, 500)
 
-    mqttclient.publish('test', 'test', 'msg1')
+    wsclient.publish('test', 'test', 'msg1')
   })
 
   it('should receive published message to chan/res with success', function (done){
@@ -366,7 +387,7 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
       done()
     }, 500)
 
-    mqttclient.publish('chan', 'res', 123)
+    wsclient.publish('chan', 'res', 123)
   })
 
   it('should receive written message with success', function (done){
@@ -376,7 +397,7 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
       done()
     }, 500)
 
-    mqttclient.write('test', 'test', 'msg2')
+    wsclient.write('test', 'test', 'msg2')
   })
 
   it('should unsubscribe from channel with success', function (done){
@@ -391,13 +412,13 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
       }
     }, 2000)
 
-    mqttclient.on('unsubscribed', function (sub) {
+    wsclient.on('unsubscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       unsubscribed = true
     })
 
-    mqttclient.unsubscribe('test', 'test')
+    wsclient.unsubscribe('test', 'test')
   })
 
   it('should disconnect with success', function (done){
@@ -412,19 +433,19 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
       }
     }, 2000)
 
-    mqttclient.on('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclient.disconnect()
+    wsclient.disconnect()
   })
 })
 
-describe('beebotte.mqtt SoS latest message reception', function () {
+describe('beebotte.ws SoS latest message reception', function () {
 
   this.timeout(15000)
 
-  var mqttclient
+  var wsclient
   var msg = null
 
   function onSub (message) {
@@ -432,7 +453,7 @@ describe('beebotte.mqtt SoS latest message reception', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnection(true)
+    wsclient = createWsConnection(true)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -441,11 +462,11 @@ describe('beebotte.mqtt SoS latest message reception', function () {
 
     setTimeout(function () {
       if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
       done()
     })
@@ -457,19 +478,19 @@ describe('beebotte.mqtt SoS latest message reception', function () {
 
     setTimeout(function () {
       if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
       }
       expect(msg).to.be.equal('msg2')
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
+    wsclient.once('subscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       subscribed = true
     })
 
-    mqttclient.subscribe('test', 'test', {read: true, write: true}, onSub)
+    wsclient.subscribe('test', 'test', {read: true, write: true}, onSub)
   })
 
   it('should unsubscribe from channel with success', function (done){
@@ -484,13 +505,13 @@ describe('beebotte.mqtt SoS latest message reception', function () {
       }
     }, 2000)
 
-    mqttclient.on('unsubscribed', function (sub) {
+    wsclient.on('unsubscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       unsubscribed = true
     })
 
-    mqttclient.unsubscribe('test', 'test')
+    wsclient.unsubscribe('test', 'test')
   })
 
   it('should disconnect with success', function (done){
@@ -499,25 +520,25 @@ describe('beebotte.mqtt SoS latest message reception', function () {
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
     }, 2000)
 
-    mqttclient.on('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclient.disconnect()
+    wsclient.disconnect()
   })
 })
 
-describe('beebotte.mqtt write to non existing channel', function () {
+describe('beebotte.ws write to non existing channel', function () {
 
   this.timeout(15000)
 
-  var mqttclient
+  var wsclient
   var msg = null
   var sigmsg = null
 
@@ -530,7 +551,7 @@ describe('beebotte.mqtt write to non existing channel', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnection(true)
+    wsclient = createWsConnection(true)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -539,11 +560,11 @@ describe('beebotte.mqtt write to non existing channel', function () {
 
     setTimeout(function () {
       if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
       done()
     })
@@ -555,46 +576,55 @@ describe('beebotte.mqtt write to non existing channel', function () {
 
     setTimeout(function () {
       if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
       }
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
+    wsclient.once('subscribed', function (sub) {
       expect(sub.channel).to.be.equal('nonchannel')
       expect(sub.resource).to.be.equal('res1')
       subscribed = true
     })
 
-    mqttclient.subscribe('nonchannel', 'res1', {read: true, write: true}, onSub)
+    wsclient.subscribe('nonchannel', 'res1', {read: true, write: true}, onSub)
   })
 
-  it('should get disconnect when writing to non existing channel', function (done){
+  it('should fail when writing to non existing channel', function (done){
+
+    setTimeout(function () {
+      expect(msg).not.to.be.equal(-1)
+      done()
+    }, 1000)
+
+    wsclient.write('nonchannel', 'res1', -1)
+  })
+
+  it('should disconnect with success', function (done){
 
     var disconnected = false
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Should disconnect on write failure'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
-    }, 500)
+    }, 2000)
 
-    mqttclient.once('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
-      mqttclient.disconnect()
     })
 
-    mqttclient.write('nonchannel', 'res1', -1)
+    wsclient.disconnect()
   })
 })
 
-describe('beebotte.mqtt write to non existing resource', function () {
+describe('beebotte.ws write to non existing resource', function () {
 
   this.timeout(15000)
 
-  var mqttclient
+  var wsclient
   var msg = null
   var sigmsg = null
 
@@ -607,7 +637,7 @@ describe('beebotte.mqtt write to non existing resource', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnection(true)
+    wsclient = createWsConnection(true)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -616,11 +646,11 @@ describe('beebotte.mqtt write to non existing resource', function () {
 
     setTimeout(function () {
       if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
       done()
     })
@@ -632,47 +662,56 @@ describe('beebotte.mqtt write to non existing resource', function () {
 
     setTimeout(function () {
       if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
       }
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
+    wsclient.once('subscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('nonexistingres')
       subscribed = true
     })
 
-    mqttclient.subscribe('test', 'nonexistingres', {read: true, write: true}, onSub)
+    wsclient.subscribe('test', 'nonexistingres', {read: true, write: true}, onSub)
   })
 
-  it('should get disconnect when writing to non existing resource', function (done){
+  it('should fail when writing to non existing resource', function (done){
+
+    setTimeout(function () {
+      expect(msg).not.to.be.equal(-1)
+      done()
+    }, 1000)
+
+    wsclient.write('test', 'nonexistingres', '12345678901234567890')
+  })
+
+  it('should disconnect with success', function (done){
 
     var disconnected = false
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Should disconnect on write failure'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
-    }, 500)
+    }, 2000)
 
-    mqttclient.once('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
-      mqttclient.disconnect()
     })
 
-    mqttclient.write('test', 'nonexistingres', '12345678901234567890')
+    wsclient.disconnect()
   })
 })
 
-describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
+describe('beebotte.ws Positive tests. Token Auth', function () {
 
   this.timeout(15000)
 
-  var mqttclient
-  var mqttclientsig
+  var wsclient
+  var wsclientsig
   var msg = null
   var sigmsg = null
 
@@ -685,23 +724,28 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, ctoken)
-    mqttclientsig = createMqttConnection(true)
+    wsclient = createWsConnectionToken(true, ctoken)
+    wsclientsig = createWsConnection(true)
   })
 
   it('should receive connected event upon connection', function (done){
 
     var connected = false
+    var connectedsig = false
 
     setTimeout(function () {
-      if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+      if (!connected && !connectsig) {
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
+      } else {
+        return done()
       }
-    }, 12000)
+    }, 5000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
-      done()
+    })
+    wsclientsig.on('connected', function() {
+      connectedsig = true
     })
   })
 
@@ -713,21 +757,21 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
       if (!subscribed) {
         return done(new Error('Failed to subscribe to signaling channel'))
       }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
       expect(sigmsg.data.channel).to.be.equal('signaling')
-      expect(sigmsg.data.resource).to.be.equal('#')
-      expect(sigmsg.channel).to.be.equal('signaling')
+      expect(sigmsg.data.resource).to.be.equal('*')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
       expect(sigmsg.resource).to.be.equal('subscribe')
       done()
     }, 2000)
 
-    mqttclientsig.once('subscribed', function (sub) {
-      expect(sub.channel).to.be.equal('signaling')
-      expect(sub.resource).to.be.equal('#')
+    wsclientsig.once('subscribed', function (sub) {
+      expect(sub.channel).to.be.equal('private-signaling')
+      expect(sub.resource).to.be.equal('*')
       subscribed = true
     })
 
-    mqttclientsig.subscribe('signaling', {read: true, write: false}, onSig)
+    wsclientsig.subscribe('private-signaling', {read: true, write: false}, onSig)
   })
 
   it('should subscribe to test/test with success', function (done){
@@ -736,23 +780,23 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
 
     setTimeout(function () {
       if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
       }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
       expect(sigmsg.data.channel).to.be.equal('test')
       expect(sigmsg.data.resource).to.be.equal('test')
-      expect(sigmsg.channel).to.be.equal('signaling')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
       expect(sigmsg.resource).to.be.equal('subscribe')
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
+    wsclient.once('subscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       subscribed = true
     })
 
-    mqttclient.subscribe('test', 'test', {read: true, write: true}, onSub)
+    wsclient.subscribe('test', 'test', {read: true, write: true}, onSub)
   })
 
   it('should receive published message to test/test with success', function (done){
@@ -762,7 +806,7 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
       done()
     }, 500)
 
-    mqttclient.publish('test', 'test', 'msg1')
+    wsclient.publish('test', 'test', 'msg1')
   })
 
   it('should receive written message with success', function (done){
@@ -772,7 +816,7 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
       done()
     }, 500)
 
-    mqttclient.write('test', 'test', 'msg2')
+    wsclient.write('test', 'test', 'msg2')
   })
 
   it('should unsubscribe from channel with success', function (done){
@@ -781,18 +825,18 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
 
     setTimeout(function () {
       if (!unsubscribed) {
-        done(new Error('Failed to unsubscribe after 2 seconds from unsubscription request'))
+        return done(new Error('Failed to unsubscribe after 2 seconds from unsubscription request'))
       }
     }, 5000)
 
-    mqttclient.on('unsubscribed', function (sub) {
+    wsclient.on('unsubscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       unsubscribed = true
       done()
     })
 
-    mqttclient.unsubscribe('test', 'test')
+    wsclient.unsubscribe('test', 'test')
   })
 
   it('should disconnect with success', function (done){
@@ -801,17 +845,17 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
     }, 2000)
 
-    mqttclient.on('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclient.disconnect()
+    wsclient.disconnect()
   })
 
   it('should disconnect from signaling connection with success', function (done){
@@ -820,26 +864,26 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
     }, 2000)
 
-    mqttclientsig.on('disconnected', function () {
+    wsclientsig.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclientsig.disconnect()
+    wsclientsig.disconnect()
   })
 })
 
-describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
+describe('beebotte.ws Positive tests. IAM Token Auth', function () {
 
   this.timeout(15000)
 
-  var mqttclient
-  var mqttclientsig
+  var wsclient
+  var wsclientsig
   var msg = null
   var sigmsg = null
 
@@ -852,23 +896,28 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, oktoken)
-    mqttclientsig = createMqttConnection(true)
+    wsclient = createWsConnectionToken(true, ctoken)
+    wsclientsig = createWsConnectionToken(true, oktoken)
   })
 
   it('should receive connected event upon connection', function (done){
 
     var connected = false
+    var connectedsig = false
 
     setTimeout(function () {
-      if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+      if (!connected && !connectsig) {
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
+      } else {
+        return done()
       }
-    }, 12000)
+    }, 5000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
-      done()
+    })
+    wsclientsig.on('connected', function() {
+      connectedsig = true
     })
   })
 
@@ -880,21 +929,21 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
       if (!subscribed) {
         return done(new Error('Failed to subscribe to signaling channel'))
       }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
       expect(sigmsg.data.channel).to.be.equal('signaling')
-      expect(sigmsg.data.resource).to.be.equal('#')
-      expect(sigmsg.channel).to.be.equal('signaling')
+      expect(sigmsg.data.resource).to.be.equal('*')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
       expect(sigmsg.resource).to.be.equal('subscribe')
       done()
     }, 2000)
 
-    mqttclientsig.once('subscribed', function (sub) {
-      expect(sub.channel).to.be.equal('signaling')
-      expect(sub.resource).to.be.equal('#')
+    wsclientsig.once('subscribed', function (sub) {
+      expect(sub.channel).to.be.equal('private-signaling')
+      expect(sub.resource).to.be.equal('*')
       subscribed = true
     })
 
-    mqttclientsig.subscribe('signaling', {read: true, write: false}, onSig)
+    wsclientsig.subscribe('private-signaling', {read: true, write: false}, onSig)
   })
 
   it('should subscribe to test/test with success', function (done){
@@ -903,23 +952,23 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
 
     setTimeout(function () {
       if (!subscribed) {
-        done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
       }
-      expect(sigmsg.data.protocol).to.be.equal('mqtt')
+      expect(sigmsg.data.protocol).to.be.equal('socketio')
       expect(sigmsg.data.channel).to.be.equal('test')
       expect(sigmsg.data.resource).to.be.equal('test')
-      expect(sigmsg.channel).to.be.equal('signaling')
+      expect(sigmsg.channel).to.be.equal('private-signaling')
       expect(sigmsg.resource).to.be.equal('subscribe')
       done()
     }, 2000)
 
-    mqttclient.once('subscribed', function (sub) {
+    wsclient.once('subscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       subscribed = true
     })
 
-    mqttclient.subscribe('test', 'test', {read: true, write: true}, onSub)
+    wsclient.subscribe('test', 'test', {read: true, write: true}, onSub)
   })
 
   it('should receive published message to test/test with success', function (done){
@@ -929,7 +978,7 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
       done()
     }, 500)
 
-    mqttclient.publish('test', 'test', 'msg1')
+    wsclient.publish('test', 'test', 'msg1')
   })
 
   it('should receive written message with success', function (done){
@@ -939,7 +988,7 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
       done()
     }, 500)
 
-    mqttclient.write('test', 'test', 'msg2')
+    wsclient.write('test', 'test', 'msg2')
   })
 
   it('should unsubscribe from channel with success', function (done){
@@ -948,18 +997,18 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
 
     setTimeout(function () {
       if (!unsubscribed) {
-        done(new Error('Failed to unsubscribe after 2 seconds from unsubscription request'))
+        return done(new Error('Failed to unsubscribe after 2 seconds from unsubscription request'))
       }
     }, 5000)
 
-    mqttclient.on('unsubscribed', function (sub) {
+    wsclient.on('unsubscribed', function (sub) {
       expect(sub.channel).to.be.equal('test')
       expect(sub.resource).to.be.equal('test')
       unsubscribed = true
       done()
     })
 
-    mqttclient.unsubscribe('test', 'test')
+    wsclient.unsubscribe('test', 'test')
   })
 
   it('should disconnect with success', function (done){
@@ -968,17 +1017,17 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
     }, 2000)
 
-    mqttclient.on('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclient.disconnect()
+    wsclient.disconnect()
   })
 
   it('should disconnect from signaling connection with success', function (done){
@@ -987,28 +1036,28 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
     }, 2000)
 
-    mqttclientsig.on('disconnected', function () {
+    wsclientsig.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclientsig.disconnect()
+    wsclientsig.disconnect()
   })
 })
 
-describe('beebotte.mqtt. Token Auth. Subscribe to non authorized channel/resource', function () {
+describe('beebotte.ws. Token Auth. Subscribe to non authorized channel/resource', function () {
 
   this.timeout(15000)
 
-  var mqttclient
+  var wsclient
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, ctoken)
+    wsclient = createWsConnectionToken(true, ctoken)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1017,11 +1066,11 @@ describe('beebotte.mqtt. Token Auth. Subscribe to non authorized channel/resourc
 
     setTimeout(function () {
       if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
       done()
     })
@@ -1037,13 +1086,13 @@ describe('beebotte.mqtt. Token Auth. Subscribe to non authorized channel/resourc
       } else {
         return done(new Error('Should fail subscribing to a channel not corresponding to the Token'))
       }
-    }, 500)
+    }, 2000)
 
-    mqttclient.once('subscribeError', function (sub) {
+    wsclient.once('subscribeError', function (sub) {
       subscribed = false
     })
 
-    mqttclient.subscribe('otherthantest', '#', {read: true, write: true}, function () {})
+    wsclient.subscribe('otherthantest', '*', {read: true, write: true}, function () {})
   })
 
   it('should disconnect with success', function (done){
@@ -1052,28 +1101,28 @@ describe('beebotte.mqtt. Token Auth. Subscribe to non authorized channel/resourc
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
     }, 2000)
 
-    mqttclient.on('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclient.disconnect()
+    wsclient.disconnect()
   })
 })
 
-describe('beebotte.mqtt. IAM Token Auth. Subscribe to non authorized channel/resource', function () {
+describe('beebotte.ws. IAM Token Auth. Subscribe with no read write IAM token', function () {
 
   this.timeout(15000)
 
-  var mqttclient
+  var wsclient
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, kotoken)
+    wsclient = createWsConnectionToken(true, kotoken)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1082,17 +1131,17 @@ describe('beebotte.mqtt. IAM Token Auth. Subscribe to non authorized channel/res
 
     setTimeout(function () {
       if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
       done()
     })
   })
 
-  it('should get authorization error when subscribing to non authorized resource', function (done){
+  it('should get authorization error when subscribing to any resource', function (done){
 
     var subscribed = null
 
@@ -1100,15 +1149,15 @@ describe('beebotte.mqtt. IAM Token Auth. Subscribe to non authorized channel/res
       if (subscribed === false) {
         return done()
       } else {
-        return done(new Error('Should fail subscribing to a channel not corresponding to the Token'))
+        return done(new Error('Should fail subscribing to a channel with no read write IAM token'))
       }
-    }, 500)
+    }, 2000)
 
-    mqttclient.once('subscribeError', function (sub) {
+    wsclient.once('subscribeError', function (sub) {
       subscribed = false
     })
 
-    mqttclient.subscribe('otherthantest', '#', {read: true, write: true}, function () {})
+    wsclient.subscribe('otherthantest', '*', {read: true, write: true}, function () {})
   })
 
   it('should disconnect with success', function (done){
@@ -1117,302 +1166,34 @@ describe('beebotte.mqtt. IAM Token Auth. Subscribe to non authorized channel/res
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
+        return done(new Error('Failed to receive disconnected event after 2 seconds from disconnection'))
       } else {
         done()
       }
     }, 2000)
 
-    mqttclient.on('disconnected', function () {
+    wsclient.on('disconnected', function () {
       disconnected = true
     })
 
-    mqttclient.disconnect()
+    wsclient.disconnect()
   })
 })
 
-describe('beebotte.mqtt. Use regular MQTT - Channel Token authentication', function () {
+describe('beebotte.ws ws user connection management', function() {
 
   this.timeout(15000)
 
-  var mqttclientsub
-  var mqttclientpub
-  var msg = null
-
-  var onMsg = function (topic, message) {
-    msg = message.toString()
-  }
-
-  before(function() {
-
-    mqttclientsub =  mqtt.connect(
-      'mqtt://' + mqtthostname,
-      //Authenticate with your channel token,
-      {
-        username: 'token:' + ctoken,
-        password: ''
-      }
-    )
-
-    mqttclientpub =  mqtt.connect(
-      'mqtt://' + mqtthostname,
-      //Authenticate with your channel token,
-      {
-        username: 'token:' + ctoken,
-        password: ''
-      }
-    )
-  })
-
-  it('should connect and subscribe with success', function (done) {
-
-    var subconnected
-    var pubconnected
-    var subsubscribed
-
-    setTimeout(function () {
-      if (subconnected && subsubscribed && pubconnected) {
-        return done()
-      } else {
-        return done(new Error('Something went wrong with pub sub connections'))
-      }
-    }, 6000)
-
-    mqttclientsub.on('connect', function () {
-      subconnected = true
-      mqttclientsub.subscribe('test/test', function (err, granted) {
-        if (granted.length === 1 && granted[0].qos !== 0x80) {
-          subsubscribed = true
-        }
-      })
-      mqttclientsub.on('message', onMsg)
-    })
-    mqttclientpub.on('connect', function () {
-      pubconnected = true
-    })
-  })
-
-  it('should receive published text message without errors', function (done){
-
-    setTimeout(function () {
-      expect(msg).to.be.equal('Hello World')
-      done()
-    }, 1000)
-
-    mqttclientpub.publish('test/test', 'Hello World')
-  })
-
-  it('should receive non JSON published message without errors', function (done){
-
-    setTimeout(function () {
-      expect(msg).to.be.equal('{pppp}pppp')
-      done()
-    }, 1000)
-
-    mqttclientpub.publish('test/test', '{pppp}pppp')
-  })
-
-  it('should disconnect with success', function (done){
-
-    mqttclientpub.end()
-    mqttclientsub.end()
-    done()
-  })
-})
-
-describe('beebotte.mqtt. Use regular MQTT - Channel Token authentication no prefix', function () {
-
-  this.timeout(15000)
-
-  var mqttclientsub
-  var mqttclientpub
-  var msg = null
-
-  var onMsg = function (topic, message) {
-    msg = message.toString()
-  }
-
-  before(function() {
-
-    mqttclientsub =  mqtt.connect(
-      'mqtt://' + mqtthostname,
-      //Authenticate with your channel token,
-      {
-        username: ctoken,
-        password: ''
-      }
-    )
-
-    mqttclientpub =  mqtt.connect(
-      'mqtt://' + mqtthostname,
-      //Authenticate with your channel token,
-      {
-        username: ctoken,
-        password: ''
-      }
-    )
-  })
-
-  it('should connect and subscribe with success', function (done) {
-
-    var subconnected
-    var pubconnected
-    var subsubscribed
-
-    setTimeout(function () {
-      if (subconnected && subsubscribed && pubconnected) {
-        return done()
-      } else {
-        return done(new Error('Something went wrong with pub sub connections'))
-      }
-    }, 6000)
-
-    mqttclientsub.on('connect', function () {
-      subconnected = true
-      mqttclientsub.subscribe('test/test', function (err, granted) {
-        if (granted.length === 1 && granted[0].qos !== 0x80) {
-          subsubscribed = true
-        }
-      })
-      mqttclientsub.on('message', onMsg)
-    })
-    mqttclientpub.on('connect', function () {
-      pubconnected = true
-    })
-  })
-
-  it('should receive published text message without errors', function (done){
-
-    setTimeout(function () {
-      expect(msg).to.be.equal('Hello World')
-      done()
-    }, 1000)
-
-    mqttclientpub.publish('test/test', 'Hello World')
-  })
-
-  it('should receive non JSON published message without errors', function (done){
-
-    setTimeout(function () {
-      expect(msg).to.be.equal('{pppp}pppp')
-      done()
-    }, 1000)
-
-    mqttclientpub.publish('test/test', '{pppp}pppp')
-  })
-
-  it('should disconnect with success', function (done){
-
-    mqttclientpub.end()
-    mqttclientsub.end()
-    done()
-  })
-})
-
-describe('beebotte.mqtt. Use regular MQTT - IAM Token authentication', function () {
-
-  this.timeout(15000)
-
-  var mqttclientsub
-  var mqttclientpub
-  var msg = null
-
-  var onMsg = function (topic, message) {
-    msg = message.toString()
-  }
-
-  before(function() {
-
-    mqttclientsub =  mqtt.connect(
-      'mqtt://' + mqtthostname,
-      //Authenticate with your channel token,
-      {
-        username: oktoken,
-        password: ''
-      }
-    )
-
-    mqttclientpub =  mqtt.connect(
-      'mqtt://' + mqtthostname,
-      //Authenticate with your channel token,
-      {
-        username: oktoken,
-        password: ''
-      }
-    )
-  })
-
-  it('should connect and subscribe with success', function (done) {
-
-    var subconnected
-    var pubconnected
-    var subsubscribed
-
-    setTimeout(function () {
-      if (subconnected && subsubscribed && pubconnected) {
-        return done()
-      } else {
-        return done(new Error('Something went wrong with pub sub connections'))
-      }
-    }, 6000)
-
-    mqttclientsub.on('connect', function () {
-      subconnected = true
-      mqttclientsub.subscribe('test/test', function (err, granted) {
-        if (granted.length === 1 && granted[0].qos !== 0x80) {
-          subsubscribed = true
-        }
-      })
-      mqttclientsub.on('message', onMsg)
-    })
-    mqttclientpub.on('connect', function () {
-      pubconnected = true
-    })
-  })
-
-  it('should receive published text message without errors', function (done){
-
-    setTimeout(function () {
-      expect(msg).to.be.equal('Hello World')
-      done()
-    }, 1000)
-
-    mqttclientpub.publish('test/test', 'Hello World')
-  })
-
-  it('should receive non JSON published message without errors', function (done){
-
-    setTimeout(function () {
-      expect(msg).to.be.equal('{pppp}pppp')
-      done()
-    }, 1000)
-
-    mqttclientpub.publish('test/test', '{pppp}pppp')
-  })
-
-  it('should disconnect with success', function (done){
-
-    mqttclientpub.end()
-    mqttclientsub.end()
-    done()
-  })
-})
-
-describe('beebotte.mqtt mqtt user connection management', function() {
-
-  this.timeout(15000)
-
-  var mqttclient
+  var wsclient
   var bclient
   var disconnected = null
 
   before(function() {
     bclient = createConnection()
-    mqttclient = createMqttConnection(true)
+    wsclient = createWsConnection(true)
 
-    mqttclient.on('disconnected', function() {
+    wsclient.on('disconnected', function() {
       disconnected = true
-      mqttclient.disconnect()
     })
   })
 
@@ -1422,21 +1203,43 @@ describe('beebotte.mqtt mqtt user connection management', function() {
 
     setTimeout(function () {
       if (!connected) {
-        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
       done()
     })
   })
 
+  it('should subscribe to test/test with success', function (done) {
+
+    var subscribed = false
+
+    setTimeout(function () {
+      if (!subscribed) {
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+      } else {
+        done()
+      }
+    }, 2000)
+
+    wsclient.once('subscribed', function (sub) {
+      expect(sub.channel).to.be.equal('test')
+      expect(sub.resource).to.be.equal('test')
+      subscribed = true
+    })
+
+    wsclient.subscribe('test', 'test', {read: true, write: true}, function () {})
+  })
+
   it('should get user connections without error', function(done) {
-    bclient.getUserConnections({
-      protocol: 'mqtt'
-    }, function(err, res) {
-      if(err) return done(err)
+    bclient.getUserConnections(function(err, res) {
+      if (err) {
+        return done(err)
+      }
+      console.log(wsclient.userinfo)
       expect(res).to.be.instanceof(Array)
       done()
     })
@@ -1444,39 +1247,41 @@ describe('beebotte.mqtt mqtt user connection management', function() {
 
   it('should get user connections with a given userid without error', function(done) {
     bclient.getUserConnections({
-      userid: mqttclient.transport.clientId,
-      protocol: 'mqtt'
+      userid: wsclient.userinfo.userid,
+      protocol: 'socketio'
     }, function(err, res) {
       if(err) return done(err)
       expect(res).to.be.instanceof(Array)
-      expect(res[0].protocol).to.be.equal('mqtt')
-      expect(res[0].clientid).to.be.equal(mqttclient.transport.clientId)
-      expect(res[0].userid).to.be.equal(mqttclient.transport.clientId)
+      expect(res[0].protocol).to.be.equal('socketio')
+      expect(res[0].clientid).to.be.equal(wsclient.userinfo.userid)
+      expect(res[0].userid).to.be.equal(wsclient.userinfo.userid)
       done()
     })
   })
 
   it('should get user connections with a given userid and session id without error', function(done) {
     bclient.getUserConnections({
-      userid: mqttclient.transport.clientId,
-      protocol: 'mqtt',
-      sid: 'bbt_test-myuniqueID'
-    }, function(err, res) {
+      userid: wsclient.userinfo.userid,
+      protocol: 'socketio',
+      sid: wsclient.connection._id
+    }, function (err, res) {
       if(err) return done(err)
       expect(res).to.be.instanceof(Array)
-      expect(res[0].protocol).to.be.equal('mqtt')
-      expect(res[0].clientid).to.be.equal(mqttclient.transport.clientId)
-      expect(res[0].userid).to.be.equal(mqttclient.transport.clientId)
+      expect(res[0].protocol).to.be.equal('socketio')
+      expect(res[0].clientid).to.be.equal(wsclient.userinfo.userid)
+      expect(res[0].userid).to.be.equal(wsclient.userinfo.userid)
       done()
     })
   })
 
   it('should drop user connections with a given userid without error', function(done) {
     bclient.dropUserConnection({
-      userid: mqttclient.transport.clientId,
-      protocol: 'mqtt'
-    }, function(err, res) {
-      if(err) return done(err)
+      userid: wsclient.userinfo.userid,
+      protocol: 'socketio'
+    }, function (err, res) {
+      if(err) {
+        return done(err)
+      }
       expect(res).to.be.equal('')
       done()
     })
@@ -1490,12 +1295,12 @@ describe('beebotte.mqtt mqtt user connection management', function() {
       } else {
         done()
       }
-    }, 1000)
+    }, 6000)
 
     bclient.dropUserConnection({
-      userid: mqttclient.transport.clientId,
-      protocol: 'mqtt'
-    }, function(err, res) {
+      userid: wsclient.userinfo.userid,
+      protocol: 'socketio'
+    }, function (err, res) {
       if(err) {
         return done(err)
       } else {
@@ -1505,19 +1310,19 @@ describe('beebotte.mqtt mqtt user connection management', function() {
   })
 })
 
-describe('beebotte.mqtt disconnect on token invalidation', function() {
+describe('beebotte.ws disconnect on token invalidation', function() {
 
   this.timeout(15000)
 
-  var mqttclient
+  var wsclient
   var bclient
   var disconnected = null
 
   before(function() {
     bclient = createConnection()
-    mqttclient = createMqttConnectionToken(true, ctoken)
+    wsclient = createWsConnectionToken(true, ctoken)
 
-    mqttclient.on('disconnected', function() {
+    wsclient.on('disconnected', function() {
       disconnected = true
     })
   })
@@ -1532,7 +1337,7 @@ describe('beebotte.mqtt disconnect on token invalidation', function() {
       }
     }, 12000)
 
-    mqttclient.on('connected', function() {
+    wsclient.on('connected', function() {
       connected = true
       done()
     })
@@ -1546,7 +1351,7 @@ describe('beebotte.mqtt disconnect on token invalidation', function() {
       } else {
         done()
       }
-    }, 1000)
+    }, 2000)
 
     bclient.regenerateChannelToken('test', function(err, res) {
       if(err) {

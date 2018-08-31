@@ -256,7 +256,7 @@ describe('Beebotte IAM Token Schema', function() {
       if (err) {
         return done(err)
       } else {
-        assert.equal(doc.owner, 'beebotte', 'owner must be beebotte')
+        assert.equal(doc.owner, 'bbt_test', 'owner must be bbt_test')
         assert.equal(doc.acl[0].action, 'data:read', 'Action type must be data:read')
         assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
         done()
@@ -270,7 +270,7 @@ describe('Beebotte IAM Token Schema', function() {
       if (err) {
         return done(err)
       } else {
-        assert.equal(doc.owner, 'beebotte', 'owner must be beebotte')
+        assert.equal(doc.owner, 'bbt_test', 'owner must be bbt_test')
         assert.equal(doc.acl[0].action, 'data:read', 'Action type must be data:read')
         assert.equal(doc.acl.length, 3, 'ACL rules must be 3')
         assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
@@ -300,7 +300,7 @@ describe('Beebotte IAM Token Schema', function() {
         return done(err)
       } else {
         assert.equal(doc._id, tokenid, 'Must get matching token id')
-        assert.equal(doc.owner, 'beebotte', 'Must get matching iam token owner')
+        assert.equal(doc.owner, 'bbt_test', 'Must get matching iam token owner')
         assert.equal(doc.token, tokenval, 'Must get matching token value')
         done()
       }
@@ -314,7 +314,7 @@ describe('Beebotte IAM Token Schema', function() {
         return done(err)
       } else {
         assert.equal(doc._id, tokenid, 'Must get matching token id')
-        assert.equal(doc.owner, 'beebotte', 'Must get matching iam token owner')
+        assert.equal(doc.owner, 'bbt_test', 'Must get matching iam token owner')
         assert.equal(doc.token, tokenval, 'Must get matching token value')
         assert.equal(doc.acl[0].action, 'data:write', 'Action type must be data:write')
         assert.equal(doc.acl.length, 2, 'ACL rules should be 2')
@@ -342,7 +342,7 @@ describe('Beebotte IAM Token Schema', function() {
     })
   })
 
-  it('It should delete all iamtoken for beebotte owner', (done) => {
+  it('It should delete all iamtoken for bbt_test owner', (done) => {
     bclient.getIAMTokens((err, docs) => {
       if (err) {
         return done(err)
@@ -516,7 +516,7 @@ describe('beebotte.rest create and work with beerules', function() {
       expect(res).to.have.property('name')
       expect(res).to.have.property('owner')
       expect(res).to.have.nested.property('action.type')
-      expect(res.owner).to.be.equal('beebotte')
+      expect(res.owner).to.be.equal('bbt_test')
       expect(res.action.type).to.be.equal('publish')
       done()
     })
@@ -533,7 +533,7 @@ describe('beebotte.rest create and work with beerules', function() {
       expect(res).to.have.property('owner')
       expect(res).to.have.nested.property('action.type')
       expect(res).to.have.nested.property('action.value')
-      expect(res.owner).to.be.equal('beebotte')
+      expect(res.owner).to.be.equal('bbt_test')
       expect(res.action.type).to.be.equal('publish')
       beeruleid = res._id
       done()
@@ -577,7 +577,7 @@ describe('beebotte.rest create and work with beerules', function() {
       expect(res).to.have.property('name')
       expect(res).to.have.property('owner')
       expect(res).to.have.nested.property('action.type')
-      expect(res.owner).to.be.equal('beebotte')
+      expect(res.owner).to.be.equal('bbt_test')
       expect(res.action.type).to.be.equal('write')
       done()
     })
@@ -593,7 +593,7 @@ describe('beebotte.rest create and work with beerules', function() {
       expect(res).to.have.property('owner')
       expect(res).to.have.nested.property('action.type')
       expect(res).to.have.nested.property('action.value')
-      expect(res.owner).to.be.equal('beebotte')
+      expect(res.owner).to.be.equal('bbt_test')
       expect(res.action.type).to.be.equal('write')
       done()
     })
@@ -608,7 +608,7 @@ describe('beebotte.rest create and work with beerules', function() {
       expect(res).to.have.property('name')
       expect(res).to.have.property('owner')
       expect(res).to.have.nested.property('action.type')
-      expect(res.owner).to.be.equal('beebotte')
+      expect(res.owner).to.be.equal('bbt_test')
       expect(res.action.type).to.be.equal('sms')
       done()
     })
@@ -623,7 +623,7 @@ describe('beebotte.rest create and work with beerules', function() {
       expect(res).to.have.property('name')
       expect(res).to.have.property('owner')
       expect(res).to.have.nested.property('action.type')
-      expect(res.owner).to.be.equal('beebotte')
+      expect(res.owner).to.be.equal('bbt_test')
       expect(res.action.type).to.be.equal('email')
       beeruleid = res._id
       done()
@@ -639,7 +639,7 @@ describe('beebotte.rest create and work with beerules', function() {
       expect(res).to.have.property('name')
       expect(res).to.have.property('owner')
       expect(res).to.have.nested.property('action.type')
-      expect(res.owner).to.be.equal('beebotte')
+      expect(res.owner).to.be.equal('bbt_test')
       expect(res.action.type).to.be.equal('webhook')
       done()
     })
@@ -652,7 +652,7 @@ describe('beebotte.rest create and work with beerules', function() {
         return done(err)
       } else {
         assert.equal(doc._id, beeruleid, 'Must get same id as requested')
-        assert.equal(doc.owner, 'beebotte', 'Owner mismatch')
+        assert.equal(doc.owner, 'bbt_test', 'Owner mismatch')
         assert.equal(doc.action.type, 'email', 'Type must be email')
         done()
       }
@@ -666,7 +666,7 @@ describe('beebotte.rest create and work with beerules', function() {
         return done(err)
       } else {
         assert.equal(doc._id, beeruleid, 'Must get same id as requested')
-        assert.equal(doc.owner, 'beebotte', 'Owner mismatch')
+        assert.equal(doc.owner, 'bbt_test', 'Owner mismatch')
         assert.equal(doc.action.type, 'email', 'Type must be email')
         assert.equal(doc.enabled, false, 'Beerule must be disabled now')
         done()
