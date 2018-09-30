@@ -1,6 +1,10 @@
 History
 =======
 
+## 1.4.1
+* Add MQTT and Socketio test cases [#29](https://github.com/beebotte/bbt_node/issues/29)
+* Allow MQTT connections to accept `clientid` or `userid` and connection client id
+
 ## 1.4.0
 * Add MQTT and Socketio test cases [#29](https://github.com/beebotte/bbt_node/issues/29)
 * Improve code quality and readability [#30](https://github.com/beebotte/bbt_node/issues/30)

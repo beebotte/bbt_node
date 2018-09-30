@@ -24,9 +24,9 @@ function createConnection() {
 function createMqttConnection (ssl) {
   return new bbt.Stream({transport: {
     type: 'mqtt',
-    mqtt_host: mqtthostname, //default can be omitted
-    ssl: ssl,
+    mqtt_host: mqtthostname,
     clientId: 'bbt_test-bbttest-' + Math.floor(Math.random() * 1000000000).toString(),
+    ssl: ssl,
     apiKey: process.env.APIKEY,
     secretKey: process.env.SECRETKEY
   }});
@@ -35,7 +35,7 @@ function createMqttConnection (ssl) {
 function createMqttConnectionToken (ssl, token) {
   return new bbt.Stream({transport: {
     type: 'mqtt',
-    mqtt_host: mqtthostname, //default can be omitted
+    mqtt_host: mqtthostname,
     ssl: ssl,
     token: token
   }});
@@ -1460,7 +1460,7 @@ describe('beebotte.mqtt mqtt user connection management', function() {
     bclient.getUserConnections({
       userid: mqttclient.transport.clientId,
       protocol: 'mqtt',
-      sid: 'bbt_test-myuniqueID'
+      sid: mqttclient.transport.clientId
     }, function(err, res) {
       if(err) return done(err)
       expect(res).to.be.instanceof(Array)
@@ -1486,7 +1486,7 @@ describe('beebotte.mqtt mqtt user connection management', function() {
 
     setTimeout(function () {
       if (!disconnected) {
-        done(new Error('Should have been disconnected following drop command'))
+        done(new Error('Should not have been disconnected following drop command with sid'))
       } else {
         done()
       }
@@ -1494,7 +1494,110 @@ describe('beebotte.mqtt mqtt user connection management', function() {
 
     bclient.dropUserConnection({
       userid: mqttclient.transport.clientId,
+      sid: mqttclient.transport.clientId,
       protocol: 'mqtt'
+    }, function(err, res) {
+      if(err) {
+        return done(err)
+      } else {
+        expect(res).to.be.equal('')
+      }
+    })
+  })
+})
+
+describe('beebotte.mqtt All protocols user connection management', function() {
+
+  this.timeout(15000)
+
+  var mqttclient
+  var bclient
+  var disconnected = null
+
+  before(function() {
+    bclient = createConnection()
+    mqttclient = createMqttConnection(true)
+
+    mqttclient.on('disconnected', function() {
+      disconnected = true
+      mqttclient.disconnect()
+    })
+  })
+
+  it('should receive connected event upon connection', function (done){
+
+    var connected = false
+
+    setTimeout(function () {
+      if (!connected) {
+        done(new Error('Failed to receive connected event after 5 seconds from connection'))
+      }
+    }, 12000)
+
+    mqttclient.on('connected', function() {
+      connected = true
+      done()
+    })
+  })
+
+  it('should get user connections without error', function(done) {
+    bclient.getUserConnections(function (err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      done()
+    })
+  })
+
+  it('should get user connections with a given userid without error', function(done) {
+    bclient.getUserConnections({
+      userid: mqttclient.transport.clientId
+    }, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      expect(res[0].protocol).to.be.equal('mqtt')
+      expect(res[0].clientid).to.be.equal(mqttclient.transport.clientId)
+      expect(res[0].userid).to.be.equal(mqttclient.transport.clientId)
+      done()
+    })
+  })
+
+  it('should get user connections with a given userid and session id without error', function(done) {
+    bclient.getUserConnections({
+      userid: mqttclient.transport.clientId,
+      sid: mqttclient.transport.clientId
+    }, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      expect(res[0].protocol).to.be.equal('mqtt')
+      expect(res[0].clientid).to.be.equal(mqttclient.transport.clientId)
+      expect(res[0].userid).to.be.equal(mqttclient.transport.clientId)
+      done()
+    })
+  })
+
+  it('should drop user connections with a given userid without error', function(done) {
+    bclient.dropUserConnection({
+      userid: mqttclient.transport.clientId
+    }, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.equal('')
+      done()
+    })
+  })
+
+  it('should drop user connections with a given userid and session id without error', function(done) {
+
+    setTimeout(function () {
+      if (!disconnected) {
+        done(new Error('Should not have been disconnected following drop command with sid'))
+      } else {
+        done()
+      }
+    }, 1000)
+
+    bclient.dropUserConnection({
+      userid: mqttclient.transport.clientId,
+      sid: mqttclient.transport.clientId
     }, function(err, res) {
       if(err) {
         return done(err)

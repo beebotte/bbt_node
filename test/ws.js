@@ -1235,7 +1235,7 @@ describe('beebotte.ws ws user connection management', function() {
   })
 
   it('should get user connections without error', function(done) {
-    bclient.getUserConnections(function(err, res) {
+    bclient.getUserConnections({protocol: 'socketio'}, function(err, res) {
       if (err) {
         return done(err)
       }
@@ -1299,7 +1299,135 @@ describe('beebotte.ws ws user connection management', function() {
 
     bclient.dropUserConnection({
       userid: wsclient.userinfo.userid,
+      sid: wsclient.connection._id,
       protocol: 'socketio'
+    }, function (err, res) {
+      if(err) {
+        return done(err)
+      } else {
+        expect(res).to.be.equal('')
+      }
+    })
+  })
+})
+
+describe('beebotte.ws all proto user connection management', function() {
+
+  this.timeout(15000)
+
+  var wsclient
+  var bclient
+  var disconnected = null
+
+  before(function() {
+    bclient = createConnection()
+    wsclient = createWsConnection(true)
+
+    wsclient.on('disconnected', function() {
+      disconnected = true
+    })
+  })
+
+  it('should receive connected event upon connection', function (done){
+
+    var connected = false
+
+    setTimeout(function () {
+      if (!connected) {
+        return done(new Error('Failed to receive connected event after 5 seconds from connection'))
+      }
+    }, 12000)
+
+    wsclient.on('connected', function() {
+      connected = true
+      done()
+    })
+  })
+
+  it('should subscribe to test/test with success', function (done) {
+
+    var subscribed = false
+
+    setTimeout(function () {
+      if (!subscribed) {
+        return done(new Error('Failed to subscribe after 2 seconds from subscription request'))
+      } else {
+        done()
+      }
+    }, 2000)
+
+    wsclient.once('subscribed', function (sub) {
+      expect(sub.channel).to.be.equal('test')
+      expect(sub.resource).to.be.equal('test')
+      subscribed = true
+    })
+
+    wsclient.subscribe('test', 'test', {read: true, write: true}, function () {})
+  })
+
+  it('should get user connections without error', function(done) {
+    bclient.getUserConnections(function(err, res) {
+      if (err) {
+        return done(err)
+      }
+      console.log(wsclient.userinfo)
+      expect(res).to.be.instanceof(Array)
+      done()
+    })
+  })
+
+  it('should get user connections with a given userid without error', function(done) {
+    bclient.getUserConnections({
+      userid: wsclient.userinfo.userid
+    }, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      expect(res[0].protocol).to.be.equal('socketio')
+      expect(res[0].clientid).to.be.equal(wsclient.userinfo.userid)
+      expect(res[0].userid).to.be.equal(wsclient.userinfo.userid)
+      done()
+    })
+  })
+
+  it('should get user connections with a given userid and session id without error', function(done) {
+    bclient.getUserConnections({
+      userid: wsclient.userinfo.userid,
+      sid: wsclient.connection._id
+    }, function (err, res) {
+      if(err) return done(err)
+      expect(res).to.be.instanceof(Array)
+      expect(res[0].protocol).to.be.equal('socketio')
+      expect(res[0].clientid).to.be.equal(wsclient.userinfo.userid)
+      expect(res[0].userid).to.be.equal(wsclient.userinfo.userid)
+      done()
+    })
+  })
+
+  it('should drop user connections with a given userid without error', function(done) {
+    bclient.dropUserConnection({
+      userid: wsclient.userinfo.userid
+    }, function (err, res) {
+      if(err) {
+        return done(err)
+      }
+      expect(res).to.be.equal('')
+      done()
+    })
+  })
+
+  it('should drop user connections with a given userid and session id without error', function(done) {
+
+    setTimeout(function () {
+      if (!disconnected) {
+        done(new Error('Should have been disconnected following drop command'))
+      } else {
+        done()
+      }
+    }, 6000)
+
+    bclient.dropUserConnection({
+      userid: wsclient.userinfo.userid,
+      sid: wsclient.connection._id
     }, function (err, res) {
       if(err) {
         return done(err)
@@ -1351,7 +1479,7 @@ describe('beebotte.ws disconnect on token invalidation', function() {
       } else {
         done()
       }
-    }, 2000)
+    }, 5000)
 
     bclient.regenerateChannelToken('test', function(err, res) {
       if(err) {
