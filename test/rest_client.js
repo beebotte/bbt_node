@@ -5,6 +5,8 @@ var expect = chai.expect
 var bbt = require('../index')
 
 var token = ''
+var iamtokenread = ''
+var iamtokenwrite = ''
 var hostname = 'api.beebotte.com'
 var beeruleid = null
 
@@ -12,6 +14,7 @@ function createConnection() {
   return new bbt.Connector({
     apiKey: process.env.APIKEY,
     secretKey: process.env.SECRETKEY,
+    //port: port,
     hostname: hostname
   })
 }
@@ -19,6 +22,15 @@ function createConnection() {
 function createConnectionToken() {
   return new bbt.Connector({
     token: token,
+    //port: port,
+    hostname: hostname
+  })
+}
+
+function createConnectionIAMToken(tkn) {
+  return new bbt.Connector({
+    token: tkn,
+    //port: port,
     hostname: hostname
   })
 }
@@ -244,6 +256,24 @@ describe('Beebotte IAM Token Schema', function() {
     }]
   }
 
+  var testtoken3 = {
+    name: 'my token',
+    description: 'some description',
+    acl: [{
+      action: 'data:read',
+      resource: ['channeltest.*']
+    }]
+  }
+
+  var testtoken4 = {
+    name: 'my token',
+    description: 'some description',
+    acl: [{
+      action: 'data:write',
+      resource: ['channeltest.res1']
+    }]
+  }
+
   var acl1 = [{
     action: 'data:write',
   }, {
@@ -281,13 +311,47 @@ describe('Beebotte IAM Token Schema', function() {
     })
   })
 
-  it('It should get 2 iamtokens', function (done) {
+  it('It should create an access token with dataread acl rules without errors', function (done) {
+
+    bclient.createIAMToken(testtoken3, (err, doc) => {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc.owner, 'bbt_test', 'owner must be bbt_test')
+        assert.equal(doc.acl[0].action, 'data:read', 'Action type must be data:read')
+        assert.equal(doc.acl[0].resource[0], testtoken3.acl[0].resource[0], 'ACL resource must be what was sent')
+        assert.equal(doc.acl.length, 1, 'ACL rules must be 1')
+        assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
+        iamtokenread = doc.token
+        done()
+      }
+    })
+  })
+
+  it('It should create an access token with datawrite acl rules without errors', function (done) {
+
+    bclient.createIAMToken(testtoken4, (err, doc) => {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(doc.owner, 'bbt_test', 'owner must be bbt_test')
+        assert.equal(doc.acl[0].action, 'data:write', 'Action type must be data:write')
+        //assert.equal(doc.acl[0].resource[0], testtoken4.acl[0].resource[0], 'ACL resource must be what was sent')
+        assert.equal(doc.acl.length, 1, 'ACL rules must be 1')
+        assert.equal(doc.token.startsWith('iamtkn'), true, 'Token value must start with iamtkn')
+        iamtokenwrite = doc.token
+        done()
+      }
+    })
+  })
+
+  it('It should get 4 iamtokens', function (done) {
 
     bclient.getIAMTokens((err, docs) => {
       if (err) {
         return done(err)
       } else {
-        assert.equal(docs.length, 2, 'Must get total of 2 iam tokens')
+        assert.equal(docs.length, 4, 'Must get total of 4 iam tokens')
         done()
       }
     })
@@ -334,25 +398,7 @@ describe('Beebotte IAM Token Schema', function() {
           if (err) {
             return done(err)
           } else {
-            assert.equal(docs.length, 1, 'Must get total of 1 iam tokens')
-            done()
-          }
-        })
-      }
-    })
-  })
-
-  it('It should delete all iamtoken for bbt_test owner', (done) => {
-    bclient.getIAMTokens((err, docs) => {
-      if (err) {
-        return done(err)
-      } else {
-        async.each(docs, (doc, callback) => {
-          bclient.deleteIAMToken(doc._id, callback)
-        }, err => {
-          if (err) {
-            return done(err)
-          } else {
+            assert.equal(docs.length, 3, 'Must get total of 3 iam tokens')
             done()
           }
         })
@@ -1026,6 +1072,178 @@ describe('beebotte.rest read/write operations', function() {
   })
 })
 
+describe('beebotte.rest read/write operations IAM Token', function() {
+  this.timeout(15000)
+  var bclientread, bclientwrite
+  before(function() {
+    bclientread = createConnectionIAMToken(iamtokenread)
+    bclientwrite = createConnectionIAMToken(iamtokenwrite)
+  })
+
+  it('should write to BBT without error', function(done) {
+    bclientwrite.write({channel: 'channeltest', resource: 'res1', data: 1}, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.equal(true)
+      done()
+    })
+  })
+
+  it('should fail writing to an unauthorized resource', function(done) {
+    bclientwrite.write({channel: 'test', resource: 'res2', data: 1}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed writing to an unauthorized resource'))
+    })
+  })
+
+  it('should fail writing to an unauthorized channel', function(done) {
+    bclientwrite.write({channel: 'test', resource: 'res1', data: 1}, function(err, res) {
+      if (err) {
+        console.log(err)
+        return done()
+      }
+      done(new Error('Should have failed writing to an unauthorized channel'))
+    })
+  })
+
+  it('should publish to BBT without error', function(done) {
+    bclientwrite.publish({channel: 'channeltest', resource: 'res1', data: 1}, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.equal(true)
+      done()
+    })
+  })
+
+  it('should fail publishing to an unauthorized resource', function(done) {
+    bclientwrite.publish({channel: 'channeltest', resource: 'res2', data: 1}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed writing to an unauthorized resource'))
+    })
+  })
+
+  it('should fail publishing to an unauthorized channel', function(done) {
+    bclientwrite.publish({channel: 'channeltest2', resource: 'res1', data: 1}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed writing to an unauthorized channel'))
+    })
+  })
+
+  it('should fail reading using write only IAM token', function(done) {
+    bclientwrite.read({channel: 'channeltest', resource: 'res1', limit: 1}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed reading using write only token'))
+    })
+  })
+
+  it('should read from BBT without error', function(done) {
+    bclientread.read({channel: 'channeltest', resource: 'res1', limit: 1}, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.have.length(1)
+      expect(res[0]).to.have.property('data')
+      expect(res[0].data).to.be.equal(1)
+      done()
+    })
+  })
+
+  it('should fail reading from unauthorized channel', function(done) {
+    bclientread.read({channel: 'test', resource: 'res1', limit: 1}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed reading from unauthorized channel'))
+    })
+  })
+
+  it('should write to BBT 1 record without error', function(done) {
+    bclientwrite.writeBulk({channel: 'channeltest', records: [
+      {resource: 'res1', data: 1}
+    ]}, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.have.length(1)
+      done()
+    })
+  })
+
+  it('should fail writing to multiple resources when unauthorized on any of them', function(done) {
+    bclientwrite.writeBulk({channel: 'channeltest', records: [
+      {resource: 'res1', data: 1},
+      {resource: 'res2', data: '2'},
+    ]}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed bulk writing when not authorized on all resources'))
+    })
+  })
+
+  it('should publish to BBT 1 record without error', function(done) {
+    bclientwrite.publishBulk({channel: 'channeltest', records: [
+      {resource: 'res1', data: 11}
+    ]}, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.equal(true)
+      done()
+    })
+  })
+
+  it('should fail publishing to multiple resources when unauthorized on any of them', function(done) {
+    bclientwrite.publishBulk({channel: 'channeltest', records: [
+      {resource: 'res1', data: 1},
+      {resource: 'res2', data: '2'},
+    ]}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed bulk publish when not authorized on all resources'))
+    })
+  })
+
+  it('should fail writing with read only token', function(done) {
+    bclientread.write({channel: 'test', resource: 'res2', data: 1}, function(err, res) {
+      if(err) return done()
+      done(new Error('Should have failed writing with read only token'))
+    })
+  })
+
+  it('should delete a record without error', function(done) {
+    //old value was 1, add a new value, delete it then verify you get 1 again
+    bclientwrite.write({channel: 'channeltest', resource: 'res1', data: 111}, function(err, res) {
+      if(err) return done(err)
+      expect(res).to.be.equal(true)
+      bclientread.read({channel: 'channeltest', resource: 'res1', limit: 1}, function(err, res) {
+        if(err) return done(err)
+        expect(res).to.have.length(1)
+        expect(res[0]).to.have.property('data')
+        expect(res[0].data).to.be.equal(111)
+        var _id = res[0]._id
+        bclientwrite.delete({channel: 'channeltest', resource: 'res1', _id: _id}, function(err, res) {
+          if(err) return done(err)
+          expect(res).to.have.property('data')
+          expect(res.data).to.be.equal(111)
+          bclientread.read({channel: 'channeltest', resource: 'res1', limit: 1}, function(err, res) {
+            if(err) return done(err)
+            expect(res).to.have.length(1)
+            expect(res[0]).to.have.property('data')
+            expect(res[0].data).to.be.equal(1)
+            done()
+          })
+        })
+      })
+    })
+  })
+
+  it('should update a record without error', function(done) {
+    bclientread.read({channel: 'channeltest', resource: 'res1', limit: 1}, function(err, res) {
+      if(err) return done(err)
+      var _id = res[0]._id
+      bclientwrite.update({channel: 'channeltest', resource: 'res1', _id: _id, data: 5}, function(err, res) {
+        if(err) return done(err)
+        expect(res).to.be.equal(true)
+        bclientread.read({channel: 'channeltest', resource: 'res1', limit: 1}, function(err, res) {
+          if(err) return done(err)
+          expect(res).to.have.length(1)
+          expect(res[0]).to.have.property('data')
+          expect(res[0].data).to.be.equal(5)
+          done()
+        })
+      })
+    })
+  })
+})
+
 describe('beebotte.rest read/write operations Token Auth', function() {
   this.timeout(15000)
   var bclient
@@ -1085,6 +1303,55 @@ describe('beebotte.rest read/write operations Token Auth', function() {
       if(err) return done(err)
       expect(res).to.be.equal(true)
       done()
+    })
+  })
+})
+
+describe('Beebotte IAM Token Full Delete', function() {
+
+  this.timeout(15000)
+  var bclientread, bclientwrite, bclient
+  before(function() {
+    bclientread = createConnectionIAMToken(iamtokenread)
+    bclientwrite = createConnectionIAMToken(iamtokenwrite)
+    bclient = createConnection()
+  })
+
+  it('It should fail reading iamtokens with read only token', (done) => {
+    bclientread.getIAMTokens((err, docs) => {
+      if (err) {
+        return done()
+      } else {
+        return done(new Error('Should have failed getting IAM tokens using unauthorized token'))
+      }
+    })
+  })
+
+  it('It should fail reading iamtokens with read only token', (done) => {
+    bclientwrite.getIAMTokens((err, docs) => {
+      if (err) {
+        return done()
+      } else {
+        return done(new Error('Should have failed getting IAM tokens using unauthorized token'))
+      }
+    })
+  })
+
+  it('It should delete all iamtoken for bbt_test owner', (done) => {
+    bclient.getIAMTokens((err, docs) => {
+      if (err) {
+        return done(err)
+      } else {
+        async.each(docs, (doc, callback) => {
+          bclient.deleteIAMToken(doc._id, callback)
+        }, err => {
+          if (err) {
+            return done(err)
+          } else {
+            done()
+          }
+        })
+      }
     })
   })
 })

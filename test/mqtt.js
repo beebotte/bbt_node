@@ -11,12 +11,14 @@ var kotoken = ''
 
 var hostname = 'api.beebotte.com'
 var mqtthostname = 'mqtt.beebotte.com'
+var useSSL = true
 
 function createConnection() {
   return new bbt.Connector({
     apiKey: process.env.APIKEY,
     secretKey: process.env.SECRETKEY,
     hostname: hostname,
+    //port: port,
     ssl: false
   });
 }
@@ -59,6 +61,12 @@ describe('beebotte.rest - give me test tokens', function() {
     name: 'KOTOKEN',
     description: 'some description',
     acl: [{
+      action: 'data:read',
+      resource: ['nothingreallythere', 'test.resourcenotexist']
+    }, {
+      action: 'data:write',
+      resource: ['nothingreallythere', 'test.resourcenotexist']
+    }, {
       action: 'admin:beerule:read',
     }]
   }
@@ -123,7 +131,7 @@ describe('beebotte.mqtt Signaling tests. API Keys Auth', function () {
   }
 
   before(function() {
-    mqttclientsig = createMqttConnection(true)
+    mqttclientsig = createMqttConnection(useSSL)
   })
 
   it('should subscribe to signaling channel with success', function (done){
@@ -162,7 +170,7 @@ describe('beebotte.mqtt Signaling tests. API Keys Auth', function () {
       done()
     }, 1000)
 
-    mqttclient = createMqttConnection(true)
+    mqttclient = createMqttConnection(useSSL)
   })
 
   it('should receive subscribe signaling message with success', function (done){
@@ -255,7 +263,7 @@ describe('beebotte.mqtt Positive tests. API Keys Auth', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnection(true)
+    mqttclient = createMqttConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -432,7 +440,7 @@ describe('beebotte.mqtt SoS latest message reception', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnection(true)
+    mqttclient = createMqttConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -530,7 +538,7 @@ describe('beebotte.mqtt write to non existing channel', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnection(true)
+    mqttclient = createMqttConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -607,7 +615,7 @@ describe('beebotte.mqtt write to non existing resource', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnection(true)
+    mqttclient = createMqttConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -685,8 +693,8 @@ describe('beebotte.mqtt Positive tests. Channel Token Auth', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, ctoken)
-    mqttclientsig = createMqttConnection(true)
+    mqttclient = createMqttConnectionToken(useSSL, ctoken)
+    mqttclientsig = createMqttConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -852,8 +860,8 @@ describe('beebotte.mqtt Positive tests. IAM Token Auth', function () {
   }
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, oktoken)
-    mqttclientsig = createMqttConnection(true)
+    mqttclient = createMqttConnectionToken(useSSL, oktoken)
+    mqttclientsig = createMqttConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1008,7 +1016,7 @@ describe('beebotte.mqtt. Token Auth. Subscribe to non authorized channel/resourc
   var mqttclient
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, ctoken)
+    mqttclient = createMqttConnectionToken(useSSL, ctoken)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1073,7 +1081,7 @@ describe('beebotte.mqtt. IAM Token Auth. Subscribe to non authorized channel/res
   var mqttclient
 
   before(function() {
-    mqttclient = createMqttConnectionToken(true, kotoken)
+    mqttclient = createMqttConnectionToken(useSSL, kotoken)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1408,7 +1416,7 @@ describe('beebotte.mqtt mqtt user connection management', function() {
 
   before(function() {
     bclient = createConnection()
-    mqttclient = createMqttConnection(true)
+    mqttclient = createMqttConnection(useSSL)
 
     mqttclient.on('disconnected', function() {
       disconnected = true
@@ -1516,7 +1524,7 @@ describe('beebotte.mqtt All protocols user connection management', function() {
 
   before(function() {
     bclient = createConnection()
-    mqttclient = createMqttConnection(true)
+    mqttclient = createMqttConnection(useSSL)
 
     mqttclient.on('disconnected', function() {
       disconnected = true
@@ -1618,7 +1626,7 @@ describe('beebotte.mqtt disconnect on token invalidation', function() {
 
   before(function() {
     bclient = createConnection()
-    mqttclient = createMqttConnectionToken(true, ctoken)
+    mqttclient = createMqttConnectionToken(useSSL, ctoken)
 
     mqttclient.on('disconnected', function() {
       disconnected = true

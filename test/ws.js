@@ -9,12 +9,14 @@ var oktoken = ''
 var kotoken = ''
 var hostname = 'api.beebotte.com'
 var wshostname = 'ws.beebotte.com'
+var useSSL = true
 
 function createConnection() {
   return new bbt.Connector({
     apiKey: process.env.APIKEY,
     secretKey: process.env.SECRETKEY,
     hostname: hostname,
+    //port: port,
     ssl: false
   });
 }
@@ -64,6 +66,12 @@ describe('beebotte.rest - give me test tokens', function() {
     name: 'KOTOKEN',
     description: 'some description',
     acl: [{
+      action: 'data:read',
+      resource: ['nothingreallythere', 'test.resourcenotexist']
+    }, {
+      action: 'data:write',
+      resource: ['nothingreallythere', 'test.resourcenotexist']
+    }, {
       action: 'admin:beerule:read',
     }]
   }
@@ -128,7 +136,7 @@ describe('beebotte.ws Signaling tests. API Keys Auth', function () {
   }
 
   before(function() {
-    wsclientsig = createWsConnection(true)
+    wsclientsig = createWsConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -183,7 +191,7 @@ describe('beebotte.ws Signaling tests. API Keys Auth', function () {
       done()
     }, 1000)
 
-    wsclient = createWsConnection(true)
+    wsclient = createWsConnection(useSSL)
   })
 
   it('should receive subscribe signaling message with success', function (done){
@@ -276,7 +284,7 @@ describe('beebotte.ws Positive tests. API Keys Auth', function () {
   }
 
   before(function() {
-    wsclient = createWsConnection(true)
+    wsclient = createWsConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -453,7 +461,7 @@ describe('beebotte.ws SoS latest message reception', function () {
   }
 
   before(function() {
-    wsclient = createWsConnection(true)
+    wsclient = createWsConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -551,7 +559,7 @@ describe('beebotte.ws write to non existing channel', function () {
   }
 
   before(function() {
-    wsclient = createWsConnection(true)
+    wsclient = createWsConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -637,7 +645,7 @@ describe('beebotte.ws write to non existing resource', function () {
   }
 
   before(function() {
-    wsclient = createWsConnection(true)
+    wsclient = createWsConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -724,8 +732,8 @@ describe('beebotte.ws Positive tests. Token Auth', function () {
   }
 
   before(function() {
-    wsclient = createWsConnectionToken(true, ctoken)
-    wsclientsig = createWsConnection(true)
+    wsclient = createWsConnectionToken(useSSL, ctoken)
+    wsclientsig = createWsConnection(useSSL)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -896,8 +904,8 @@ describe('beebotte.ws Positive tests. IAM Token Auth', function () {
   }
 
   before(function() {
-    wsclient = createWsConnectionToken(true, ctoken)
-    wsclientsig = createWsConnectionToken(true, oktoken)
+    wsclient = createWsConnectionToken(useSSL, ctoken)
+    wsclientsig = createWsConnectionToken(useSSL, oktoken)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1057,7 +1065,7 @@ describe('beebotte.ws. Token Auth. Subscribe to non authorized channel/resource'
   var wsclient
 
   before(function() {
-    wsclient = createWsConnectionToken(true, ctoken)
+    wsclient = createWsConnectionToken(useSSL, ctoken)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1122,7 +1130,7 @@ describe('beebotte.ws. IAM Token Auth. Subscribe with no read write IAM token', 
   var wsclient
 
   before(function() {
-    wsclient = createWsConnectionToken(true, kotoken)
+    wsclient = createWsConnectionToken(useSSL, kotoken)
   })
 
   it('should receive connected event upon connection', function (done){
@@ -1190,7 +1198,7 @@ describe('beebotte.ws ws user connection management', function() {
 
   before(function() {
     bclient = createConnection()
-    wsclient = createWsConnection(true)
+    wsclient = createWsConnection(useSSL)
 
     wsclient.on('disconnected', function() {
       disconnected = true
@@ -1321,7 +1329,7 @@ describe('beebotte.ws all proto user connection management', function() {
 
   before(function() {
     bclient = createConnection()
-    wsclient = createWsConnection(true)
+    wsclient = createWsConnection(useSSL)
 
     wsclient.on('disconnected', function() {
       disconnected = true
@@ -1448,7 +1456,7 @@ describe('beebotte.ws disconnect on token invalidation', function() {
 
   before(function() {
     bclient = createConnection()
-    wsclient = createWsConnectionToken(true, ctoken)
+    wsclient = createWsConnectionToken(useSSL, ctoken)
 
     wsclient.on('disconnected', function() {
       disconnected = true
