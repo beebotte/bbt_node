@@ -1,6 +1,9 @@
 History
 =======
 
+## 1.5.0
+* Specify ACL resources in IAM Token creation and update [#38](https://github.com/beebotte/bbt_node/issues/38)
+
 ## 1.4.1
 * Add MQTT and Socketio test cases [#29](https://github.com/beebotte/bbt_node/issues/29)
 * Allow MQTT connections to accept `clientid` or `userid` and connection client id
