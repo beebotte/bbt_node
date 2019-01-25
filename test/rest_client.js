@@ -522,6 +522,25 @@ describe('beebotte.rest create and work with beerules', function() {
     }
   }
 
+  var testfcm = {
+    name: 'fcm beerule',
+    description: 'some description',
+    trigger: {
+      event: 'write',
+      channel: 'channeltest',
+      resource: 'res1'
+    },
+    condition: 'channeltest.res1 > 0',
+    action: {
+      type: 'fcm',
+      serverKey: 'somekey',
+      senderID: 'someid',
+      to: '/topics/sometopic',
+      isTopic: true,
+      isNotification: true
+    }
+  }
+
   var testwildcards = {
     name: 'email notif',
     description: 'some description',
@@ -691,6 +710,21 @@ describe('beebotte.rest create and work with beerules', function() {
     })
   })
 
+  it('should create a FCM beerule without error', function(done) {
+    bclient.createBeerule(testfcm, function(err, res) {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res).to.have.property('name')
+      expect(res).to.have.property('owner')
+      expect(res).to.have.nested.property('action.type')
+      expect(res.owner).to.be.equal('bbt_test')
+      expect(res.action.type).to.be.equal('fcm')
+      done()
+    })
+  })
+
   it('It should get a beerule by id without errors', function (done) {
 
     bclient.getBeerule(beeruleid, function (err, doc) {
@@ -752,7 +786,7 @@ describe('beebotte.rest create and work with beerules', function() {
       if (err) {
         return done(err)
       } else {
-        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        assert.equal(docs.length, 8, 'Must get total of 8 beerules')
         done()
       }
     })
@@ -764,7 +798,7 @@ describe('beebotte.rest create and work with beerules', function() {
       if (err) {
         return done(err)
       } else {
-        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        assert.equal(docs.length, 8, 'Must get total of 8 beerules')
         done()
       }
     })
@@ -776,7 +810,7 @@ describe('beebotte.rest create and work with beerules', function() {
       if (err) {
         return done(err)
       } else {
-        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        assert.equal(docs.length, 8, 'Must get total of 8 beerules')
         done()
       }
     })
@@ -842,6 +876,18 @@ describe('beebotte.rest create and work with beerules', function() {
     })
   })
 
+  it('It should get all FCM beerules without errors', function (done) {
+
+    bclient.getBeerules({type: 'fcm'}, function (err, docs) {
+      if (err) {
+        return done(err)
+      } else {
+        assert.equal(docs.length, 1, 'Must get total of 1 beerules')
+        done()
+      }
+    })
+  })
+
   it('It should get one publish beerule with write trigger', function (done) {
 
     bclient.getBeerules({type: 'publish', event: 'write'}, function (err, docs) {
@@ -890,13 +936,13 @@ describe('beebotte.rest create and work with beerules', function() {
     })
   })
 
-  it('It should get four beerules with write trigger', function (done) {
+  it('It should get five beerules with write trigger', function (done) {
 
     bclient.getBeerules({event: 'write'}, function (err, docs) {
       if (err) {
         return done(err)
       } else {
-        assert.equal(docs.length, 4, 'Must get total of 4 beerules')
+        assert.equal(docs.length, 5, 'Must get total of 5 beerules')
         done()
       }
     })
@@ -914,25 +960,25 @@ describe('beebotte.rest create and work with beerules', function() {
     })
   })
 
-  it('It should get 7 beerules with trigger channel test', function (done) {
+  it('It should get 8 beerules with trigger channel test', function (done) {
 
     bclient.getBeerules({channel: 'channeltest'}, function (err, docs) {
       if (err) {
         return done(err)
       } else {
-        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        assert.equal(docs.length, 8, 'Must get total of 8 beerules')
         done()
       }
     })
   })
 
-  it('It should get 7 beerules with trigger resource res1', function (done) {
+  it('It should get 8 beerules with trigger resource res1', function (done) {
 
     bclient.getBeerules({resource: 'res1'}, function (err, docs) {
       if (err) {
         return done(err)
       } else {
-        assert.equal(docs.length, 7, 'Must get total of 7 beerules')
+        assert.equal(docs.length, 8, 'Must get total of 8 beerules')
         done()
       }
     })
@@ -1368,7 +1414,7 @@ describe('beebotte.rest delete beerules', function() {
           if (err) {
             return done(err)
           } else {
-            assert.equal(docs.length, 6, 'Must get total of 6 beerules')
+            assert.equal(docs.length, 7, 'Must get total of 7 beerules')
             done()
           }
         })
