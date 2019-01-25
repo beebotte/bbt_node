@@ -1,5 +1,7 @@
 History
 =======
+## 1.6.0
+* Support creation of FCM Beerules [#39](https://github.com/beebotte/bbt_node/issues/39)
 
 ## 1.5.0
 * Specify ACL resources in IAM Token creation and update [#38](https://github.com/beebotte/bbt_node/issues/38)
