@@ -1,5 +1,8 @@
 History
 =======
+## 1.6.1
+* Upgrade extend to v3.0.2 to eliminate a security vulnerability [PR #40](https://github.com/beebotte/bbt_node/pull/40)
+
 ## 1.6.0
 * Support creation of FCM Beerules [#39](https://github.com/beebotte/bbt_node/issues/39)
 
