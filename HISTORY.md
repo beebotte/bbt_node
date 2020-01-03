@@ -1,5 +1,15 @@
 History
 =======
+## 1.7.0
+* Upgrade request to v2.88.0
+* Upgrade socket.io-client to v2.3.0
+* Replace deprecated joi with @hapi/joi v16.1.8
+* Upgrade mqtt to v2.18.8
+* Upgrade dev dependency chai to v4.2.0
+* Upgrade dev dependency jshint to v2.10.3
+* Upgrade dev dependency mocha to v6.2.2
+* Remove unused dev dependencies coveralls and istanbul
+
 ## 1.6.1
 * Upgrade extend to v3.0.2 to eliminate a security vulnerability [PR #40](https://github.com/beebotte/bbt_node/pull/40)
 
