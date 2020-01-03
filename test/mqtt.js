@@ -1628,8 +1628,17 @@ describe('beebotte.mqtt disconnect on token invalidation', function() {
     bclient = createConnection()
     mqttclient = createMqttConnectionToken(useSSL, ctoken)
 
+    mqttclient.on('error', function(err) {
+      mqttclient.disconnect()
+    })
+
+    mqttclient.on('reconnecting', function() {
+      mqttclient.disconnect()
+    })
+
     mqttclient.on('disconnected', function() {
       disconnected = true
+      mqttclient.disconnect()
     })
   })
 
