@@ -173,6 +173,6 @@ Alternatively, you could specify an authentication endpoint (see [client authent
 ```
 
 ## License
-Copyright 2017 Beebotte.
+Copyright 2020 Beebotte.
 
 [The MIT License](http://opensource.org/licenses/MIT)

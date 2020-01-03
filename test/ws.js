@@ -1,3 +1,5 @@
+// Copyright 2013-2020 Beebotte. All rights reserved.
+
 var async = require('async')
 var chai = require('chai')
 var assert = chai.assert
